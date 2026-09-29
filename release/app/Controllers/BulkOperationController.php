@@ -114,8 +114,12 @@ class BulkOperationController extends BaseController
             $data = $request->all();
             $data['store_id'] = $storeId;
 
-            // 1. Create operation in DB with pending status
+            // 1. Create operation in DB with pending status (or return existing if idempotent duplicate)
             $operation = $this->engine->createOperation($storeId, $user->id, $data);
+            if (!empty($operation['is_cached_idempotent'])) {
+                unset($operation['is_cached_idempotent']);
+                return $this->success($operation, [], 200);
+            }
             $opId = (int)$operation['id'];
 
             // 2. Execute operation immediately (synchronous batch execution)

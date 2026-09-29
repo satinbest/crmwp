@@ -354,6 +354,19 @@ class DemoWooCommerceAdapter implements WooCommerceAdapterInterface
         throw new \Exception("متغیر یافت نشد.", 404);
     }
 
+    public function batchVariations(int $productId, array $data): array
+    {
+        $updated = [];
+        foreach ($data['update'] ?? [] as $item) {
+            if (!empty($item['id'])) {
+                $varId = (int)$item['id'];
+                unset($item['id']);
+                $updated[] = $this->updateVariation($productId, $varId, $item);
+            }
+        }
+        return ['update' => $updated];
+    }
+
     // ==========================================
     // Inventory
     // ==========================================

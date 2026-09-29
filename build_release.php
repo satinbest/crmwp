@@ -40,11 +40,17 @@ $files = [
     'cron.php',
     'cli.php',
     '.env.example',
-    'SECURITY.md',
-    'PRODUCTION_CHECKLIST.md',
+    'README.md',
+    'INSTALL.md',
+    'UPGRADE.md',
+    'BACKUP.md',
     'BACKUP_RESTORE.md',
+    'PRODUCTION_CHECKLIST.md',
     'DEPLOYMENT.md',
     'RELEASE.md',
+    'RELEASE_NOTES.md',
+    'RELEASE_MANIFEST.json',
+    'SECURITY.md',
 ];
 
 foreach ($files as $file) {

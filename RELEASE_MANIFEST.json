@@ -1,0 +1,80 @@
+{
+  "app_name": "WooCommerce Management & CRM",
+  "app_slug": "crmwp",
+  "app_version": "1.0.0",
+  "release_candidate_version": "1.0.0-RC1",
+  "build_date": "2026-09-29T16:00:00+03:30",
+  "environment": "Production-Ready",
+  "system_requirements": {
+    "php_minimum": "8.2.0",
+    "php_recommended": "8.3.0+",
+    "mariadb_minimum": "10.6.0+",
+    "mariadb_recommended": "11.x / 13.0+",
+    "mysql_compatible": "8.0+",
+    "web_servers": ["Apache 2.4", "LiteSpeed", "Nginx"],
+    "required_php_extensions": [
+      "pdo",
+      "pdo_mysql",
+      "openssl",
+      "mbstring",
+      "curl",
+      "json",
+      "session"
+    ],
+    "optional_php_extensions": [
+      "intl",
+      "gd",
+      "zip"
+    ]
+  },
+  "frontend": {
+    "framework": "Vue 3",
+    "build_version": "1.0.0-rc1",
+    "styling": "Tailwind CSS + Unified Design Tokens",
+    "typography": "Local Vazirmatn (9 font weights woff2, zero external CDN)",
+    "icons": "Local Iconsax Vector System",
+    "rtl_supported": true,
+    "persian_digits_centralized": true,
+    "light_dark_mode": true
+  },
+  "database": {
+    "total_migrations": 18,
+    "migration_versions": [
+      "001_create_users_and_roles_tables",
+      "002_create_sessions_and_tokens_tables",
+      "003_create_stores_and_credentials_tables",
+      "004_create_crm_tables",
+      "005_create_bulk_and_audit_tables",
+      "006_create_webhooks_and_sync_tables",
+      "007_create_notifications_and_activities_tables",
+      "008_create_phase4_customer_relations_tables",
+      "009_create_phase5_order_relations_tables",
+      "010_create_phase6_product_relations_tables",
+      "011_create_phase7_bulk_operations_tables",
+      "012_create_phase8_inventory_tables",
+      "013_create_phase9_crm_enhancements",
+      "014_create_phase11_rbac_tables",
+      "015_create_phase12_notification_tables",
+      "016_create_phase13_webhooks_tables",
+      "017_create_phase14_multistore_tables",
+      "018_create_phase15_automations_tables"
+    ],
+    "seeder": "App\\Database\\Seeders\\DatabaseSeeder"
+  },
+  "runtime_dependencies": {
+    "nodejs_required": false,
+    "npm_required": false,
+    "composer_required": false,
+    "redis_required": false,
+    "rabbitmq_required": false,
+    "docker_required": false,
+    "external_ai_required": false,
+    "external_cdn_required": false
+  },
+  "deployment_notes": [
+    "Application is 100% self-contained and pre-packaged with all vendor and production assets.",
+    "Web installer is available at /install with automatic post-install lock protection.",
+    "Background tasks, automations and webhook reconciliations run via server cron executing cron.php every minute.",
+    "Storage directory requires write permissions (chmod 775 storage)."
+  ]
+}

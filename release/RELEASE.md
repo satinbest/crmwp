@@ -4,7 +4,8 @@
 
 * **نام محصول**: سامانه جامع مدیریت و ارتباط با مشتریان ووکامرس (crmwp)
 * **شماره نسخه (Version)**: `1.0.0`
-* **تاریخ ساخت (Build Date)**: `2026-09-28`
+* **نسخه کاندیدای انتشار (Release Candidate)**: `1.0.0-RC1`
+* **تاریخ ساخت (Build Date)**: `2026-09-29`
 * **محیط هدف (Environment)**: Production Candidate (Shared Hosting & Dedicated Linux Server)
 * **وضعیت لایسنس / مالکیت**: اختصاصی و مستقل (Self-contained)
 

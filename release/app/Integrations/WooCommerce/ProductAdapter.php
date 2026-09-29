@@ -367,4 +367,25 @@ class ProductAdapter
         $raw = $this->client->post('/products/batch', $data);
         return is_array($raw) ? $raw : [];
     }
+
+    /**
+     * Batch update variations for a variable product.
+     */
+    public function batchVariations(int $productId, array $data): array
+    {
+        if ($this->demoAdapter !== null) {
+            $updated = [];
+            foreach ($data['update'] ?? [] as $item) {
+                if (!empty($item['id'])) {
+                    $varId = (int)$item['id'];
+                    unset($item['id']);
+                    $updated[] = $this->updateVariation($productId, $varId, $item);
+                }
+            }
+            return ['update' => $updated];
+        }
+
+        $raw = $this->client->post("/products/{$productId}/variations/batch", $data);
+        return is_array($raw) ? $raw : [];
+    }
 }
