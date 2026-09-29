@@ -1,0 +1,17 @@
+{
+    "name": "crmwp/platform",
+    "description": "WooCommerce Management & CRM Platform",
+    "authors": [
+        {
+            "name": "Antigravity"
+        }
+    ],
+    "require": {
+        "php": ">=8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    }
+}

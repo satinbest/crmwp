@@ -1,0 +1,34 @@
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+
+# Dependency directories
+/node_modules/
+
+# Storage & Temporary Files
+/storage/logs/*.log
+/storage/cache/*
+/storage/app/*
+!/storage/logs/.gitkeep
+!/storage/cache/.gitkeep
+!/storage/app/.gitkeep
+
+# Uploaded Media in Production
+/public/storage/avatars/*
+!/public/storage/avatars/.htaccess
+!/public/storage/avatars/.gitkeep
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace

@@ -1,0 +1,22 @@
+# Prevent script execution in upload directory
+<IfModule mod_authz_core.c>
+    <FilesMatch "\.(php|phtml|php3|php4|php5|php7|phps|cgi|pl|sh|py|asp|aspx|exe)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <FilesMatch "\.(php|phtml|php3|php4|php5|php7|phps|cgi|pl|sh|py|asp|aspx|exe)$">
+        Deny from all
+    </FilesMatch>
+</IfModule>
+
+Options -Indexes -ExecCGI
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
+</IfModule>

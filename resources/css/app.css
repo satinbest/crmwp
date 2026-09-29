@@ -1,0 +1,423 @@
+@import "vazirmatn/Vazirmatn-font-face.css";
+@import "tailwindcss";
+
+@theme {
+  --color-slate-850: #141d2e;
+}
+
+:root {
+  --font-sans: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+
+  /* Semantic Design Tokens - Light Mode */
+  --background: #f8fafc;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --surface-muted: #f1f5f9;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-disabled: #94a3b8;
+
+  --input-background: #f8fafc;
+  --input-background-focus: #ffffff;
+  --input-border: #cbd5e1;
+  --input-border-focus: #6366f1;
+  --input-text: #0f172a;
+  --input-placeholder: #64748b;
+
+  --hover: #f1f5f9;
+  --active: #e2e8f0;
+  --focus: rgba(99, 102, 241, 0.18);
+
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-text: #ffffff;
+
+  --success: #10b981;
+  --success-bg: #ecfdf5;
+  --success-text: #065f46;
+
+  --warning: #f59e0b;
+  --warning-bg: #fffbeb;
+  --warning-text: #92400e;
+
+  --danger: #ef4444;
+  --danger-bg: #fef2f2;
+  --danger-text: #991b1b;
+  /* Button Tokens - Light Mode */
+  --btn-primary-bg: #4f46e5;
+  --btn-primary-hover: #4338ca;
+  --btn-primary-active: #3730a3;
+  --btn-primary-text: #ffffff;
+
+  --btn-secondary-bg: #ffffff;
+  --btn-secondary-hover: #f1f5f9;
+  --btn-secondary-active: #e2e8f0;
+  --btn-secondary-border: #cbd5e1;
+  --btn-secondary-text: #1e293b;
+
+  --btn-ghost-hover: #f1f5f9;
+  --btn-ghost-active: #e2e8f0;
+  --btn-ghost-text: #475569;
+
+  --btn-danger-bg: #e11d48;
+  --btn-danger-hover: #be123c;
+  --btn-danger-active: #9f1239;
+  --btn-danger-text: #ffffff;
+}
+
+.dark {
+  /* Semantic Design Tokens - Dark Mode */
+  --background: #090d16;
+  --surface: #0f172a;
+  --surface-elevated: #1e293b;
+  --surface-muted: #1e293b;
+  --border: #334155;
+  --border-strong: #475569;
+
+  --text-primary: #f8fafc;
+  --text-secondary: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-disabled: #64748b;
+
+  --input-background: #1e293b;
+  --input-background-focus: #141d2e;
+  --input-border: #475569;
+  --input-border-focus: #818cf8;
+  --input-text: #f8fafc;
+  --input-placeholder: #94a3b8;
+
+  --hover: #1e293b;
+  --active: #334155;
+  --focus: rgba(129, 140, 248, 0.25);
+
+  --primary: #6366f1;
+  --primary-hover: #818cf8;
+  --primary-text: #ffffff;
+
+  --success: #10b981;
+  --success-bg: rgba(16, 185, 129, 0.15);
+  --success-text: #34d399;
+
+  --warning: #f59e0b;
+  --warning-bg: rgba(245, 158, 11, 0.15);
+  --warning-text: #fbbf24;
+
+  --danger: #ef4444;
+  --danger-bg: rgba(239, 68, 68, 0.15);
+  --danger-text: #f87171;
+
+  /* Button Tokens - Dark Mode */
+  --btn-primary-bg: #6366f1;
+  --btn-primary-hover: #4f46e5;
+  --btn-primary-active: #4338ca;
+  --btn-primary-text: #ffffff;
+
+  --btn-secondary-bg: #0f172a;
+  --btn-secondary-hover: #1e293b;
+  --btn-secondary-active: #334155;
+  --btn-secondary-border: #334155;
+  --btn-secondary-text: #f8fafc;
+
+  --btn-ghost-hover: #1e293b;
+  --btn-ghost-active: #334155;
+  --btn-ghost-text: #cbd5e1;
+
+  --btn-danger-bg: #e11d48;
+  --btn-danger-hover: #be123c;
+  --btn-danger-active: #9f1239;
+  --btn-danger-text: #ffffff;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    direction: rtl;
+    text-align: right;
+    background-color: var(--background);
+    color: var(--text-primary);
+  }
+
+  body {
+    overflow-x: hidden;
+    background-color: var(--background);
+    color: var(--text-primary);
+  }
+
+  /* Universal Button Keyboard Focus & Transition Standards */
+  button {
+    font-family: inherit;
+    transition-property: color, background-color, border-color, box-shadow, transform;
+    transition-duration: 150ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  button:focus-visible,
+  a:focus-visible {
+    outline: none !important;
+    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--primary) !important;
+  }
+
+  /* Universal High-Contrast Form Controls Baseline */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="file"]),
+  select,
+  textarea {
+    color: var(--input-text);
+    background-color: var(--input-background);
+    border-color: var(--input-border);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--input-placeholder) !important;
+    opacity: 1 !important;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="file"]):hover,
+  select:hover,
+  textarea:hover {
+    border-color: var(--border-strong);
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="file"]):focus,
+  select:focus,
+  textarea:focus {
+    background-color: var(--input-background-focus) !important;
+    border-color: var(--input-border-focus) !important;
+    box-shadow: 0 0 0 3px var(--focus);
+    outline: none !important;
+  }
+
+  /* Consistent Table Headers and Borders */
+  table th {
+    color: var(--text-secondary) !important;
+    background-color: var(--surface-muted) !important;
+  }
+
+  table tr {
+    border-color: var(--border);
+  }
+
+  table tr:hover {
+    background-color: var(--hover);
+  }
+
+  /* Prevent Washed-Out / White Hover Glitch Globally */
+  button.hover\:bg-white:hover,
+  .hover\:bg-white:hover {
+    background-color: var(--hover) !important;
+  }
+}
+
+@layer components {
+  /* Unified Button Classes */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    border-radius: 0.75rem;
+    height: 2.5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    white-space: nowrap;
+    user-select: none;
+    cursor: pointer;
+    border: 1px solid transparent;
+    outline: none;
+  }
+
+  .btn:focus-visible {
+    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--primary);
+  }
+
+  .btn:disabled,
+  .btn[disabled] {
+    opacity: 0.55;
+    cursor: not-allowed !important;
+    pointer-events: none;
+  }
+
+  .btn-sm {
+    height: 2rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    font-size: 0.75rem;
+    border-radius: 0.5rem;
+    gap: 0.375rem;
+  }
+
+  .btn-lg {
+    height: 2.75rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+    font-size: 0.875rem;
+    border-radius: 0.875rem;
+    gap: 0.625rem;
+  }
+
+  .btn-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border-radius: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .btn-icon-sm {
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border-radius: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .btn-primary {
+    background-color: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.22);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--btn-primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.28);
+  }
+  .btn-primary:active:not(:disabled) {
+    background-color: var(--btn-primary-active);
+    transform: translateY(0);
+  }
+
+  .btn-secondary {
+    background-color: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border-color: var(--btn-secondary-border);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background-color: var(--btn-secondary-hover);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+  }
+  .btn-secondary:active:not(:disabled) {
+    background-color: var(--btn-secondary-active);
+  }
+
+  .btn-outline {
+    background-color: transparent;
+    color: var(--text-primary);
+    border-color: var(--border);
+  }
+  .btn-outline:hover:not(:disabled) {
+    background-color: var(--hover);
+    border-color: var(--border-strong);
+  }
+  .btn-outline:active:not(:disabled) {
+    background-color: var(--active);
+  }
+
+  .btn-ghost {
+    background-color: transparent;
+    color: var(--text-secondary);
+    border-color: transparent;
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background-color: var(--btn-ghost-hover);
+    color: var(--text-primary);
+  }
+  .btn-ghost:active:not(:disabled) {
+    background-color: var(--btn-ghost-active);
+  }
+
+  .btn-danger {
+    background-color: var(--btn-danger-bg);
+    color: var(--btn-danger-text);
+    box-shadow: 0 4px 12px rgba(225, 29, 72, 0.22);
+  }
+  .btn-danger:hover:not(:disabled) {
+    background-color: var(--btn-danger-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(225, 29, 72, 0.28);
+  }
+  .btn-danger:active:not(:disabled) {
+    background-color: var(--btn-danger-active);
+    transform: translateY(0);
+  }
+
+  .btn-success {
+    background-color: var(--success);
+    color: var(--primary-text);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.22);
+  }
+  .btn-success:hover:not(:disabled) {
+    background-color: #059669;
+    transform: translateY(-1px);
+  }
+
+  /* Standardized Toolbar Refresh Button */
+  .btn-refresh {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    height: 2.5rem; /* 40px standard */
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+    border-radius: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background-color: var(--surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .btn-refresh:hover:not(:disabled) {
+    background-color: var(--hover);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+  }
+  .btn-refresh:active:not(:disabled) {
+    background-color: var(--active);
+  }
+  .btn-refresh:focus-visible {
+    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--primary);
+  }
+  .btn-refresh:disabled {
+    opacity: 0.55;
+    cursor: not-allowed !important;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}

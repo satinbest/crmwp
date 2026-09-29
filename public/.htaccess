@@ -1,0 +1,38 @@
+# Apache / LiteSpeed Production Web Server Configuration
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Block sensitive files directly
+    RewriteRule ^(\.env|\.git|\.lock|composer\.(json|lock)|package(-lock)?\.json) - [F,L,NC]
+
+    # Handle Authorization Header for API Bearer / Basic
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Direct static file access
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Route all requests (API, Installer, SPA) through index.php
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+# Caching for immutable static production assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+</IfModule>
+
+# Security Headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "DENY"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
