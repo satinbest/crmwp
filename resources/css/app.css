@@ -1,6 +1,8 @@
 @import "vazirmatn/Vazirmatn-font-face.css";
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *));
+
 @theme {
   --color-slate-850: #141d2e;
 }
@@ -69,7 +71,7 @@
   --btn-danger-text: #ffffff;
 }
 
-.dark {
+.dark, [data-theme="dark"] {
   /* Semantic Design Tokens - Dark Mode */
   --background: #090d16;
   --surface: #0f172a;

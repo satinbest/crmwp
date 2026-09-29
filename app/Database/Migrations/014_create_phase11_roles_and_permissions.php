@@ -245,7 +245,7 @@ class CreatePhase11RolesAndPermissions
 
         // 5. Seed Demo Users with encrypted/hashed password
         $defaultPassword = password_hash('Password123!', PASSWORD_BCRYPT, ['cost' => 12]);
-        $storeId = (int)$pdo->query("SELECT id FROM `stores` ORDER BY id ASC LIMIT 1")->fetchColumn() ?: 2;
+        $storeId = (int)($pdo->query("SELECT id FROM `stores` ORDER BY id ASC LIMIT 1")->fetchColumn() ?: 0);
 
         $demoUsers = [
             ['admin', 'admin@crmwp.local', 'حسین', 'مدیری', 'admin'],

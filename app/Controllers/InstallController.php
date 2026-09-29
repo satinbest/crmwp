@@ -275,8 +275,46 @@ class InstallController
         }
     }
 
+    private function getVazirmatnFontFaces(): string
+    {
+        $assetsDir = dirname(__DIR__, 2) . '/public/assets';
+        $weightMap = [
+            100 => 'Thin',
+            200 => 'ExtraLight',
+            300 => 'Light',
+            400 => 'Regular',
+            500 => 'Medium',
+            600 => 'SemiBold',
+            700 => 'Bold',
+            800 => 'ExtraBold',
+            900 => 'Black',
+        ];
+
+        $css = '';
+        foreach ($weightMap as $weight => $name) {
+            $files = glob($assetsDir . '/Vazirmatn-' . $name . '-*.woff2');
+            if (empty($files)) {
+                $files = glob($assetsDir . '/Vazirmatn-' . $name . '.woff2');
+            }
+            if (!empty($files)) {
+                $filename = basename($files[0]);
+                $css .= "
+        @font-face {
+            font-family: 'Vazirmatn';
+            src: url('/assets/{$filename}') format('woff2');
+            font-weight: {$weight};
+            font-style: normal;
+            font-display: swap;
+        }";
+            }
+        }
+
+        return $css;
+    }
+
     private function renderAlreadyInstalled(): Response
     {
+        $fontFaces = $this->getVazirmatnFontFaces();
         $html = '<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
@@ -284,10 +322,15 @@ class InstallController
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>سامانه قبلاً نصب شده است</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; }
+        ' . $fontFaces . '
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body, input, button, select, textarea, label, h1, h2, h3, p, a, .btn {
+            font-family: \'Vazirmatn\', -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif;
+        }
+        body { background-color: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; direction: rtl; text-align: right; line-height: 1.6; }
         .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 1rem; max-width: 480px; width: 100%; padding: 2.5rem; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); }
         .icon { width: 56px; height: 56px; margin: 0 auto 1.5rem; background: rgba(16, 185, 129, 0.15); color: #10b981; border-radius: 1rem; display: flex; align-items: center; justify-content: center; font-size: 28px; }
-        h1 { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.75rem; }
+        h1 { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.75rem; line-height: 1.5; }
         p { color: #94a3b8; font-size: 0.875rem; line-height: 1.6; margin-bottom: 2rem; }
         .btn { display: inline-block; background-color: #6366f1; color: white; padding: 0.75rem 2rem; border-radius: 0.75rem; text-decoration: none; font-weight: 600; font-size: 0.875rem; transition: background-color 0.2s; }
         .btn:hover { background-color: #4f46e5; }
@@ -303,13 +346,13 @@ class InstallController
 </body>
 </html>';
 
-        $response = new Response($html, 200, ['Content-Type' => 'text/html; charset=utf-8']);
-        return $response;
+        return new Response($html, 200, ['Content-Type' => 'text/html; charset=utf-8']);
     }
 
     private function renderInstallerWizard(): Response
     {
         $version = defined('CRM_APP_VERSION') ? CRM_APP_VERSION : '1.0.0';
+        $fontFaces = $this->getVazirmatnFontFaces();
         $html = '<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
@@ -317,40 +360,45 @@ class InstallController
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>نصب سامانه مدیریت و CRM ووکامرس</title>
     <style>
+        ' . $fontFaces . '
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b0f19; color: #f1f5f9; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1rem; }
+        body, input, button, select, textarea, label, h1, h2, h3, h4, p, span, div, a, .btn, .step-label {
+            font-family: \'Vazirmatn\', -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif;
+        }
+        body { background: #0b0f19; color: #f1f5f9; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1rem; direction: rtl; text-align: right; line-height: 1.6; }
         .container { max-width: 680px; width: 100%; background: #131b2e; border: 1px solid #1e293b; border-radius: 1.25rem; padding: 2rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
         .header { text-align: center; margin-bottom: 2rem; border-bottom: 1px solid #1e293b; padding-bottom: 1.5rem; }
-        .header h1 { font-size: 1.35rem; font-weight: 800; color: #f8fafc; margin-bottom: 0.5rem; }
-        .header p { font-size: 0.825rem; color: #94a3b8; }
+        .header h1 { font-size: 1.35rem; font-weight: 800; color: #f8fafc; margin-bottom: 0.5rem; line-height: 1.5; }
+        .header p { font-size: 0.825rem; color: #94a3b8; line-height: 1.5; }
         .step-indicators { display: flex; justify-content: space-between; margin-bottom: 2rem; position: relative; }
         .step { display: flex; flex-direction: column; align-items: center; flex: 1; position: relative; z-index: 1; }
         .step-circle { width: 32px; height: 32px; border-radius: 50%; background: #1e293b; color: #94a3b8; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.5rem; border: 2px solid transparent; }
         .step.active .step-circle { background: #4f46e5; color: white; border-color: #818cf8; }
         .step.done .step-circle { background: #10b981; color: white; }
-        .step-label { font-size: 0.7rem; color: #94a3b8; text-align: center; }
-        .step.active .step-label { color: #f8fafc; font-weight: 600; }
+        .step-label { font-size: 0.75rem; color: #94a3b8; text-align: center; font-weight: 500; }
+        .step.active .step-label { color: #f8fafc; font-weight: 700; }
         .form-group { margin-bottom: 1.25rem; }
-        label { display: block; font-size: 0.775rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.4rem; }
-        input[type="text"], input[type="password"], input[type="email"], input[type="number"] { width: 100%; padding: 0.65rem 0.85rem; border-radius: 0.65rem; background: #0a0f1d; border: 1px solid #334155; color: #f8fafc; font-size: 0.825rem; outline: none; transition: border-color 0.2s; }
+        label { display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.4rem; line-height: 1.4; }
+        input[type="text"], input[type="password"], input[type="email"], input[type="number"] { width: 100%; padding: 0.65rem 0.85rem; border-radius: 0.65rem; background: #0a0f1d; border: 1px solid #334155; color: #f8fafc; font-size: 0.85rem; outline: none; transition: border-color 0.2s, box-shadow 0.2s; line-height: 1.5; }
+        input.ltr-input { direction: ltr; text-align: left; }
         input:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); }
-        .grid-2 { display: grid; grid-cols: 1; gap: 1rem; }
+        .grid-2 { display: grid; grid-template-columns: 1fr; gap: 1rem; }
         @media(min-width: 640px) { .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.65rem 1.25rem; border-radius: 0.65rem; font-size: 0.8rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; user-select: none; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.65rem 1.25rem; border-radius: 0.65rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; user-select: none; line-height: 1.5; }
         .btn-primary { background: #4f46e5; color: white; }
         .btn-primary:hover { background: #4338ca; }
         .btn-secondary { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
         .btn-secondary:hover { background: #334155; color: white; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .check-item { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: #0a0f1d; border: 1px solid #1e293b; border-radius: 0.65rem; margin-bottom: 0.5rem; font-size: 0.8rem; }
+        .check-item { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: #0a0f1d; border: 1px solid #1e293b; border-radius: 0.65rem; margin-bottom: 0.5rem; font-size: 0.825rem; line-height: 1.5; }
         .badge { padding: 0.2rem 0.6rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; }
         .badge-success { background: rgba(16, 185, 129, 0.15); color: #34d399; }
         .badge-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; }
         .actions { display: flex; justify-content: space-between; margin-top: 2rem; border-top: 1px solid #1e293b; padding-top: 1.25rem; }
-        .alert { padding: 0.75rem 1rem; border-radius: 0.65rem; font-size: 0.8rem; margin-bottom: 1rem; }
+        .alert { padding: 0.75rem 1rem; border-radius: 0.65rem; font-size: 0.825rem; margin-bottom: 1rem; line-height: 1.6; }
         .alert-danger { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; }
         .alert-success { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #6ee7b7; }
-        .footer { text-align: center; margin-top: 1.5rem; font-size: 0.7rem; color: #64748b; }
+        .footer { text-align: center; margin-top: 1.5rem; font-size: 0.75rem; color: #64748b; line-height: 1.5; }
     </style>
 </head>
 <body>
@@ -383,25 +431,25 @@ class InstallController
             <div class="grid-2">
                 <div class="form-group">
                     <label>میزبان پایگاه‌داده (Database Host)</label>
-                    <input type="text" id="db_host" value="127.0.0.1">
+                    <input type="text" id="db_host" class="ltr-input" value="127.0.0.1">
                 </div>
                 <div class="form-group">
                     <label>پورت (Port)</label>
-                    <input type="number" id="db_port" value="3306">
+                    <input type="number" id="db_port" class="ltr-input" value="3306">
                 </div>
             </div>
             <div class="form-group">
                 <label>نام پایگاه‌داده (Database Name)</label>
-                <input type="text" id="db_name" value="crmwp" placeholder="مثال: crmwp">
+                <input type="text" id="db_name" class="ltr-input" value="crmwp" placeholder="مثال: crmwp">
             </div>
             <div class="grid-2">
                 <div class="form-group">
                     <label>نام‌کاربری دیتابیس (Username)</label>
-                    <input type="text" id="db_user" value="root">
+                    <input type="text" id="db_user" class="ltr-input" value="root">
                 </div>
                 <div class="form-group">
                     <label>کلمه عبور دیتابیس (Password)</label>
-                    <input type="password" id="db_pass" placeholder="رمز دیتابیس">
+                    <input type="password" id="db_pass" class="ltr-input" placeholder="رمز دیتابیس">
                 </div>
             </div>
             <div style="margin-bottom: 1rem;">
@@ -423,16 +471,16 @@ class InstallController
             <div class="grid-2">
                 <div class="form-group">
                     <label>نام کاربری (Username)</label>
-                    <input type="text" id="admin_username" value="admin">
+                    <input type="text" id="admin_username" class="ltr-input" value="admin">
                 </div>
                 <div class="form-group">
                     <label>ایمیل (Email)</label>
-                    <input type="email" id="admin_email" value="admin@example.com">
+                    <input type="email" id="admin_email" class="ltr-input" value="admin@example.com">
                 </div>
             </div>
             <div class="form-group">
                 <label>کلمه عبور مدیر ارشد (حداقل ۸ کاراکتر)</label>
-                <input type="password" id="admin_password" placeholder="کلمه عبور امن">
+                <input type="password" id="admin_password" class="ltr-input" placeholder="کلمه عبور امن">
             </div>
             <div class="actions">
                 <button type="button" class="btn btn-secondary" onclick="goToStep(2)">بازگشت</button>

@@ -31,6 +31,7 @@ class DatabaseSeeder
         $this->seedStores();
         $this->seedUserStores();
         $this->seedStoreCrmData();
+        $this->seedDemoPhase12Notifications();
         $this->seedDemoWebhookData();
         $this->seedDemoAutomations();
     }
@@ -539,6 +540,89 @@ class DatabaseSeeder
                     $notifStmt->execute([$adminId, $storeId, 'order_status_changed', 'سفارش جدید #1042 دریافت شد', 'مبلغ سفارش ۳۴۵,۰۰۰ تومان پرداخت شده است', 'normal', date('Y-m-d H:i:s', strtotime('-1 hour'))]);
                 }
             }
+        }
+    }
+
+    private function seedDemoPhase12Notifications(): void
+    {
+        $adminId = (int)$this->pdo->query("SELECT id FROM `users` WHERE `username` = 'admin'")->fetchColumn();
+        $storeId = (int)$this->pdo->query("SELECT id FROM `stores` ORDER BY id ASC LIMIT 1")->fetchColumn();
+
+        if (!$adminId) {
+            return;
+        }
+
+        $existing = (int)$this->pdo->query("SELECT COUNT(*) FROM `notifications` WHERE `user_id` = {$adminId} AND `type` = 'task_assigned'")->fetchColumn();
+        if ($existing > 0) {
+            return;
+        }
+
+        $validStoreId = $storeId > 0 ? $storeId : null;
+
+        $demoNotifications = [
+            [
+                'user_id' => $adminId,
+                'store_id' => $validStoreId,
+                'type' => 'task_assigned',
+                'title' => 'وظیفه جدید تخصیص یافت',
+                'message' => 'وظیفه «پیگیری سفارش شماره ۱۰۰۱ مشتری علی رضایی» به شما واگذار گردید.',
+                'data' => json_encode(['task_id' => 1, 'order_id' => 1001, 'customer_name' => 'علی رضایی'], JSON_UNESCAPED_UNICODE),
+                'priority' => 'high',
+                'action_url' => '/crm/tasks',
+                'read_at' => null,
+            ],
+            [
+                'user_id' => $adminId,
+                'store_id' => $validStoreId,
+                'type' => 'low_stock',
+                'title' => 'هشدار کمبود موجودی کالا',
+                'message' => 'موجودی انبار محصول «لپ‌تاپ گیمینگ ایسوس مدل ROG Strix» به ۳ عدد کاهش یافته است.',
+                'data' => json_encode(['product_id' => 301, 'current_stock' => 3, 'low_stock_amount' => 5], JSON_UNESCAPED_UNICODE),
+                'priority' => 'urgent',
+                'action_url' => '/inventory',
+                'read_at' => null,
+            ],
+            [
+                'user_id' => $adminId,
+                'store_id' => $validStoreId,
+                'type' => 'bulk_operation_completed',
+                'title' => 'عملیات دسته‌جمعی تکمیل شد',
+                'message' => 'عملیات افزایش قیمت محصولات دسته لپ‌تاپ با موفقیت خاتمه یافت. ۲۴۷ محصول بروزرسانی شدند.',
+                'data' => json_encode(['operation_id' => 101, 'processed' => 247, 'failed' => 0], JSON_UNESCAPED_UNICODE),
+                'priority' => 'normal',
+                'action_url' => '/bulk-operations',
+                'read_at' => date('Y-m-d H:i:s', time() - 3600),
+            ],
+            [
+                'user_id' => $adminId,
+                'store_id' => $validStoreId,
+                'type' => 'order_attention',
+                'title' => 'سفارش نیازمند توجه ویژه',
+                'message' => 'سفارش شماره ۱۰۰۲ با وضعیت انتقال کارت‌به‌کارت بیش از ۱۲ ساعت در انتظار تایید مانده است.',
+                'data' => json_encode(['order_id' => 1002, 'status' => 'pending', 'total' => '24500000'], JSON_UNESCAPED_UNICODE),
+                'priority' => 'high',
+                'action_url' => '/orders/1002',
+                'read_at' => date('Y-m-d H:i:s', time() - 7200),
+            ],
+            [
+                'user_id' => $adminId,
+                'store_id' => null, // Global System Notification
+                'type' => 'system',
+                'title' => 'به‌روزرسانی موفقیت‌آمیز سیستم',
+                'message' => 'سامانه مدیریت ووکامرس و CRM به آخرین نسخه با امکانات مرکز اعلان‌ها ارتقا یافت.',
+                'data' => json_encode(['version' => '1.12.0', 'release' => 'Phase 12'], JSON_UNESCAPED_UNICODE),
+                'priority' => 'low',
+                'action_url' => '/dashboard',
+                'read_at' => date('Y-m-d H:i:s', time() - 86400),
+            ],
+        ];
+
+        $stmt = $this->pdo->prepare("
+            INSERT INTO `notifications` (`user_id`, `store_id`, `type`, `title`, `message`, `data`, `priority`, `action_url`, `read_at`, `created_at`)
+            VALUES (:user_id, :store_id, :type, :title, :message, :data, :priority, :action_url, :read_at, NOW())
+        ");
+        foreach ($demoNotifications as $dn) {
+            $stmt->execute($dn);
         }
     }
 

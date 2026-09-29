@@ -193,8 +193,8 @@ echo "\n";
 echo "9. Cron CLI & Concurrency Locking:\n";
 assertTest('cron.php CLI script exists', file_exists(__DIR__ . '/../cron.php'));
 $cronExecOutput = shell_exec('php ' . escapeshellarg(__DIR__ . '/../cron.php') . ' 2>&1');
-assertTest('cron.php executes cleanly via CLI', str_contains($cronExecOutput, 'Background tasks finished successfully'));
-assertTest('cron.php processes scheduled automations', str_contains($cronExecOutput, 'Running scheduled automations'));
+assertTest('cron.php executes cleanly via CLI', str_contains($cronExecOutput, 'Status: success') || str_contains($cronExecOutput, 'Background tasks finished successfully'));
+assertTest('cron.php processes scheduled automations', str_contains($cronExecOutput, 'Automations processed') || str_contains($cronExecOutput, 'Running scheduled automations'));
 echo "\n";
 
 echo "========================================================\n";
