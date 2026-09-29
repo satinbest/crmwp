@@ -197,8 +197,8 @@ assertTest("Sample variation stock_quantity set to 45", (int)($sampleStockVar['s
 assertTest("Sample variation stock_status set to instock", ($sampleStockVar['stock_status'] ?? '') === 'instock');
 
 // --- 5. Execution: Mixed Selection (Simple + Variable) ---
-echo "\n--- 5. Mixed Selection Execution (Simple + Variable) ---\n";
-$simples = array_values(array_filter($prodRes['json']['data'] ?? [], fn($p) => ($p['type'] ?? '') === 'simple'));
+$allProds = httpReq('GET', '/api/v1/products', ['per_page' => 10], $adminCookie, $storeHeader);
+$simples = array_values(array_filter($allProds['json']['data'] ?? [], fn($p) => ($p['type'] ?? '') === 'simple'));
 $simpleId = (int)($simples[0]['id'] ?? 0);
 
 if ($simpleId > 0) {

@@ -358,7 +358,8 @@ class ProductBulkHandler extends BaseBulkHandler
             // 2. Variations preview (if target is variations or both, and product is variable)
             if (($target === 'variations' || $target === 'both') && $isVariable) {
                 try {
-                    $vars = $adapter->listVariations((int)$prod['id']);
+                    $varsRes = $adapter->listVariations((int)$prod['id']);
+                    $vars = $varsRes['data'] ?? (is_array($varsRes) ? $varsRes : []);
                     foreach ($vars as $v) {
                         $sampleVariationCount++;
                         $vMutation = $this->calculateProductMutation($v, $actionType, $params);
@@ -436,7 +437,7 @@ class ProductBulkHandler extends BaseBulkHandler
             if ($isVariable) {
                 // If targeting parent or both
                 if ($target === 'parent' || $target === 'both') {
-                    if (in_array($actionType, ['add_category', 'remove_category', 'add_tag', 'remove_tag', 'set_status'], true)) {
+                    if (in_array($actionType, ['add_category', 'remove_category', 'add_tag', 'remove_tag', 'set_status', 'set_stock_status'], true)) {
                         $mutation = $this->calculateProductMutation($prod, $actionType, $params);
                         $parentToExecute[$id] = [
                             'entity' => $prod,
@@ -462,7 +463,8 @@ class ProductBulkHandler extends BaseBulkHandler
                 if ($target === 'variations' || $target === 'both') {
                     if (!in_array($actionType, ['add_category', 'remove_category', 'add_tag', 'remove_tag'], true)) {
                         try {
-                            $vars = $adapter->listVariations($id);
+                            $varsRes = $adapter->listVariations($id);
+                            $vars = $varsRes['data'] ?? (is_array($varsRes) ? $varsRes : []);
                             if (!empty($vars)) {
                                 $variationBatches[$id] = [
                                     'parent' => $prod,

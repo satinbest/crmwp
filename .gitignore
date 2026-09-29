@@ -2,30 +2,46 @@
 .env
 .env.local
 .env.*.local
+cookie.txt
+*.cookie
 
-# Dependency directories
+# Dependencies
 /node_modules/
+/vendor/
 
-# Storage & Temporary Files
-/storage/logs/*.log
+# Build output
+/release/
+/public/assets/
+/public/index.html
+/index.html.bak
+
+# Storage (runtime)
+/storage/logs/*
 /storage/cache/*
+/storage/framework/cache/*
+/storage/locks/*
+/storage/uploads/*
+/storage/temp/*
 /storage/app/*
-!/storage/logs/.gitkeep
-!/storage/cache/.gitkeep
-!/storage/app/.gitkeep
+!/storage/**/.gitkeep
+!/storage/.htaccess
 
-# Uploaded Media in Production
+# Uploaded media
 /public/storage/avatars/*
 !/public/storage/avatars/.htaccess
 !/public/storage/avatars/.gitkeep
 
-# OS generated files
+# Scratch / debug
+/scratch/
+font_mono_audit.txt
+
+# OS files
 .DS_Store
 Thumbs.db
 ehthumbs.db
 desktop.ini
 
-# IDE & Editor files
+# IDE & Editor
 .vscode/
 .idea/
 *.swp

@@ -146,6 +146,23 @@ class BulkOperationEngine
             throw new InvalidArgumentException("حداکثر تعداد مجاز رکوردها در یک عملیات گروهی ۵,۰۰۰ رکورد است. جهت حفظ پایداری سرور، لطفاً از فیلترهای محدودتر استفاده نمایید.");
         }
 
+        $idempotencyKey = !empty($requestData['idempotency_key']) ? trim((string)$requestData['idempotency_key']) : null;
+        if ($idempotencyKey !== null && $idempotencyKey !== '') {
+            $stmt = $this->pdo->prepare("
+                SELECT id FROM bulk_operations 
+                WHERE store_id = :store_id 
+                  AND JSON_UNQUOTE(JSON_EXTRACT(payload, '$.idempotency_key')) = :idempotency_key 
+                ORDER BY id DESC LIMIT 1
+            ");
+            $stmt->execute(['store_id' => $storeId, 'idempotency_key' => $idempotencyKey]);
+            $existingId = $stmt->fetchColumn();
+            if ($existingId) {
+                $existingOp = $this->getOperation((int)$existingId, $storeId);
+                $existingOp['is_cached_idempotent'] = true;
+                return $existingOp;
+            }
+        }
+
         $targetEntityDb = $this->getTargetEntityDbEnum($entityType);
 
         $payload = [
@@ -156,6 +173,9 @@ class BulkOperationEngine
             'selection' => $selection,
             'filter' => $filter,
         ];
+        if ($idempotencyKey !== null && $idempotencyKey !== '') {
+            $payload['idempotency_key'] = $idempotencyKey;
+        }
 
         $stmt = $this->pdo->prepare("
             INSERT INTO bulk_operations (
