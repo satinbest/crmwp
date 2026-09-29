@@ -24,6 +24,8 @@ $router->group(['prefix' => '/api/v1'], function (Router $api) {
     $api->get('/health/liveness', [SystemController::class, 'liveness']);
     $api->get('/health/ready', [SystemController::class, 'readiness']);
     $api->get('/system/health', [SystemController::class, 'health']);
+    $api->get('/system/cron', [SystemController::class, 'cron']);
+    $api->post('/system/cron', [SystemController::class, 'cron']);
 
     // Installer Endpoints (Phase 17)
     $api->get('/install/check', [\App\Controllers\InstallController::class, 'check']);

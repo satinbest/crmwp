@@ -204,21 +204,29 @@ class InstallController
             $roleStmt = $pdo->prepare("INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, 1)");
             $roleStmt->execute([$adminId]);
 
-            // 5. Generate Secure Encryption Key and Application Secret
+            // 5. Generate Secure Encryption Key, Application Secret and Cron Secret
             $encryptionKey = bin2hex(random_bytes(32));
             $appSecret = bin2hex(random_bytes(32));
+            $cronSecret = bin2hex(random_bytes(24));
 
             // 6. Write Production .env File
             $rootDir = dirname(__DIR__, 2);
             $envPath = $rootDir . '/.env';
 
+            $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+                || (($_SERVER['SERVER_PORT'] ?? 80) == 443)
+                || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+            $scheme = $isHttps ? 'https://' : 'http://';
+            $appUrl = $scheme . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+
             $envContent = "# WooCommerce Management & CRM Platform - Production Environment\n" .
                 "APP_NAME=\"WooCommerce Management & CRM\"\n" .
                 "APP_ENV=production\n" .
                 "APP_DEBUG=false\n" .
-                "APP_URL=http://" . ($_SERVER['HTTP_HOST'] ?? 'localhost') . "\n" .
+                "APP_URL={$appUrl}\n" .
                 "APP_SECRET={$appSecret}\n" .
-                "ENCRYPTION_KEY={$encryptionKey}\n\n" .
+                "ENCRYPTION_KEY={$encryptionKey}\n" .
+                "CRON_SECRET={$cronSecret}\n\n" .
                 "# Database Configuration\n" .
                 "DB_HOST={$dbHost}\n" .
                 "DB_PORT={$dbPort}\n" .
@@ -227,6 +235,10 @@ class InstallController
                 "DB_PASSWORD=\"{$dbPass}\"\n" .
                 "DB_CHARSET=utf8mb4\n" .
                 "DB_COLLATION=utf8mb4_unicode_ci\n\n" .
+                "# Session Security\n" .
+                "SESSION_LIFETIME=7200\n" .
+                "SESSION_SECURE=" . ($isHttps ? "true\n" : "false\n") .
+                "SESSION_SAME_SITE=Lax\n\n" .
                 "# Application Settings\n" .
                 "TIMEZONE=Asia/Tehran\n" .
                 "LOCALE=fa\n" .

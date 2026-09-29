@@ -109,4 +109,30 @@ class SystemController extends BaseController
             'timestamp' => date('c'),
         ]);
     }
+
+    /**
+     * GET /api/v1/system/cron
+     * POST /api/v1/system/cron
+     * Secure Web Cron endpoint for shared hosting environments
+     */
+    public function cron(Request $request): Response
+    {
+        $providedToken = (string)($request->query('token') ?? $request->input('token') ?? $request->header('X-Cron-Token') ?? '');
+        $cronSecret = \App\Support\Env::get('CRON_SECRET', \App\Support\Env::get('APP_SECRET', ''));
+
+        if (empty($cronSecret) || empty($providedToken) || !hash_equals($cronSecret, $providedToken)) {
+            return $this->error(
+                'FORBIDDEN',
+                'دسترسی غیرمجاز. ارسال توکن امنیتی Cron الزامی است.',
+                [],
+                403
+            );
+        }
+
+        $cronService = new \App\Services\CronService(dirname(__DIR__, 2));
+        $result = $cronService->run();
+
+        $statusCode = ($result['status'] === 'failed') ? 500 : 200;
+        return $this->success($result, [], $statusCode);
+    }
 }

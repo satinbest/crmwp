@@ -1,0 +1,37 @@
+# Apache / LiteSpeed Production Configuration for Shared Hosting
+# ==============================================================================
+# 1. Prevent direct browser access to private application directories and files
+# ==============================================================================
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Block direct HTTP access to sensitive files
+    RewriteRule ^(\.env|\.git|\.lock|composer\.(json|lock)|package(-lock)?\.json|cron\.php|cli\.php) - [F,L,NC]
+    
+    # Block direct HTTP access to private application directories
+    RewriteRule ^(app|config|storage|vendor|routes|resources|scratch|tests)(/.*)?$ - [F,L,NC]
+
+    # Handle Authorization Header for API Bearer / Basic
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # If the request is for an existing file or directory inside public, rewrite to it
+    RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -f [OR]
+    RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -d
+    RewriteRule ^(.*)$ public/$1 [L]
+
+    # Forward all other requests through public/index.php
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/index.php [L,QSA]
+</IfModule>
+
+# Disable directory listing
+Options -Indexes
+
+# Security Headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "DENY"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
