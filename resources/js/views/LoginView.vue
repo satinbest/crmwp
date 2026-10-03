@@ -50,7 +50,7 @@
                 type="text"
                 autocomplete="username"
                 required
-                placeholder="admin"
+                placeholder="نام کاربری یا ایمیل خود را وارد کنید"
                 class="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 transition-all focus:outline-none"
               />
             </div>
@@ -77,35 +77,12 @@
           <button
             type="submit"
             :disabled="loading"
-            class="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold py-2.5 px-4 rounded-xl text-sm shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold py-2.5 px-4 rounded-xl text-sm shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             <span v-if="loading" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
             <span>{{ loading ? 'در حال ورود...' : 'ورود به سامانه' }}</span>
           </button>
         </form>
-
-        <!-- Demo Accounts Quick Fill -->
-        <div class="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
-          <div class="text-[11px] font-semibold text-slate-400 mb-2.5 text-center">حساب‌های آزمایشی فاز ۱:</div>
-          <div class="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              @click="fillDemo('admin', 'AdminPassword123!')"
-              class="p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-right transition-colors text-xs"
-            >
-              <div class="font-bold text-slate-800 dark:text-slate-200">مدیر ارشد</div>
-              <div class="text-[10px] text-slate-400">admin (دسترسی کامل)</div>
-            </button>
-            <button
-              type="button"
-              @click="fillDemo('manager', 'ManagerPassword123!')"
-              class="p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-right transition-colors text-xs"
-            >
-              <div class="font-bold text-slate-800 dark:text-slate-200">مدیر فروشگاه</div>
-              <div class="text-[10px] text-slate-400">manager (عملیات و CRM)</div>
-            </button>
-          </div>
-        </div>
       </div>
 
       <!-- Security Notice -->
@@ -129,16 +106,10 @@ const authStore = useAuthStore();
 const themeStore = useThemeStore();
 const notification = useNotificationStore();
 
-const username = ref('admin');
-const password = ref('AdminPassword123!');
+const username = ref('');
+const password = ref('');
 const loading = ref(false);
 const errorMessage = ref('');
-
-const fillDemo = (u, p) => {
-  username.value = u;
-  password.value = p;
-  errorMessage.value = '';
-};
 
 const handleLogin = async () => {
   loading.value = true;

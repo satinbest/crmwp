@@ -135,6 +135,30 @@ class ProductBulkHandler extends BaseBulkHandler
                 'description' => 'تنظیم وزن فیزیکی کالا برای محاسبه هزینه حمل‌ونقل',
                 'params' => ['value' => 'numeric|non_negative'],
             ],
+            'set_sku' => [
+                'name' => 'ویرایش شناسه محصول (SKU)',
+                'category' => 'general',
+                'description' => 'تنظیم یا افزودن پیشوند/پسوند به شناسه انبارداری محصول',
+                'params' => ['mode' => 'enum:set,prefix,suffix', 'value' => 'string'],
+            ],
+            'set_featured' => [
+                'name' => 'تعیین به عنوان محصول ویژه',
+                'category' => 'general',
+                'description' => 'علامت‌گذاری یا لغو محصول ویژه (Featured)',
+                'params' => ['featured' => 'boolean'],
+            ],
+            'set_catalog_visibility' => [
+                'name' => 'قابلیت مشاهده در کاتالوگ',
+                'category' => 'general',
+                'description' => 'تعیین نحوه نمایش محصول در فروشگاه و نتایج جستجو',
+                'params' => ['visibility' => 'enum:visible,catalog,search,hidden'],
+            ],
+            'set_metadata' => [
+                'name' => 'ویرایش متادیتا سفارشی (Custom Meta)',
+                'category' => 'metadata',
+                'description' => 'تنظیم یا حذف فیلدهای متادیتای اختصاصی ووکامرس',
+                'params' => ['key' => 'string', 'value' => 'string', 'action' => 'enum:set,delete'],
+            ],
         ];
     }
 
@@ -258,6 +282,42 @@ class ProductBulkHandler extends BaseBulkHandler
                 }
                 $validated['value'] = (string)$val;
                 break;
+
+            case 'set_sku':
+                $mode = $params['mode'] ?? 'set';
+                if (!in_array($mode, ['set', 'prefix', 'suffix'], true)) {
+                    $mode = 'set';
+                }
+                $validated['mode'] = $mode;
+                $validated['value'] = trim((string)($params['value'] ?? ''));
+                break;
+
+            case 'set_featured':
+                $validated['featured'] = filter_var($params['featured'] ?? true, FILTER_VALIDATE_BOOLEAN);
+                break;
+
+            case 'set_catalog_visibility':
+                $vis = trim((string)($params['visibility'] ?? 'visible'));
+                $allowed = ['visible', 'catalog', 'search', 'hidden'];
+                if (!in_array($vis, $allowed, true)) {
+                    throw new InvalidArgumentException("وضعیت نمایش در کاتالوگ نامعتبر است.");
+                }
+                $validated['visibility'] = $vis;
+                break;
+
+            case 'set_metadata':
+                $metaKey = trim((string)($params['key'] ?? ''));
+                if (empty($metaKey)) {
+                    throw new InvalidArgumentException("مشخص کردن نام فیلد متادیتا (Meta Key) الزامی است.");
+                }
+                $metaAction = $params['action'] ?? 'set';
+                if (!in_array($metaAction, ['set', 'delete'], true)) {
+                    $metaAction = 'set';
+                }
+                $validated['key'] = $metaKey;
+                $validated['value'] = $params['value'] ?? '';
+                $validated['action'] = $metaAction;
+                break;
         }
 
         return $validated;
@@ -282,16 +342,11 @@ class ProductBulkHandler extends BaseBulkHandler
 
         if ($this->isIdsMode($selection)) {
             $ids = array_slice($this->extractIds($selection), 0, $limit);
-            $items = [];
-            foreach ($ids as $id) {
-                try {
-                    $prod = $adapter->getProduct((int)$id);
-                    $items[] = $prod;
-                } catch (\Throwable $e) {
-                    continue;
-                }
+            if (empty($ids)) {
+                return [];
             }
-            return $items;
+            $res = $adapter->listProducts(['include' => $ids, 'per_page' => count($ids)]);
+            return $res['data'] ?? [];
         }
 
         $queryParams = array_merge($filter, ['page' => 1, 'per_page' => $limit]);
@@ -306,16 +361,11 @@ class ProductBulkHandler extends BaseBulkHandler
         if ($this->isIdsMode($selection)) {
             $ids = $this->extractIds($selection);
             $slice = array_slice($ids, ($page - 1) * $perPage, $perPage);
-            $items = [];
-            foreach ($slice as $id) {
-                try {
-                    $prod = $adapter->getProduct((int)$id);
-                    $items[] = $prod;
-                } catch (\Throwable $e) {
-                    continue;
-                }
+            if (empty($slice)) {
+                return [];
             }
-            return $items;
+            $res = $adapter->listProducts(['include' => $slice, 'per_page' => count($slice)]);
+            return $res['data'] ?? [];
         }
 
         $queryParams = array_merge($filter, ['page' => $page, 'per_page' => $perPage]);
@@ -381,9 +431,22 @@ class ProductBulkHandler extends BaseBulkHandler
 
         // Calculate authoritative affected counts
         $parentCount = $this->resolveCount($store, $selection, $filter);
+        $sampleCount = count($sampleEntities);
         $estimatedVariationsCount = $sampleVariationCount;
-        if ($parentCount > count($sampleEntities) && count($sampleEntities) > 0) {
-            $estimatedVariationsCount = (int)round(($sampleVariationCount / count($sampleEntities)) * $parentCount);
+        if ($parentCount > $sampleCount && $sampleCount > 0) {
+            $estimatedVariationsCount = (int)round(($sampleVariationCount / $sampleCount) * $parentCount);
+        }
+
+        $estimatedVariableCount = $sampleCount > 0 ? (int)round(($variableCount / $sampleCount) * $parentCount) : 0;
+        $estimatedSimpleCount = max(0, $parentCount - $estimatedVariableCount);
+
+        if (($filter['type'] ?? '') === 'simple') {
+            $estimatedSimpleCount = $parentCount;
+            $estimatedVariableCount = 0;
+            $estimatedVariationsCount = 0;
+        } elseif (($filter['type'] ?? '') === 'variable') {
+            $estimatedSimpleCount = 0;
+            $estimatedVariableCount = $parentCount;
         }
 
         $finalAffectedCount = match ($target) {
@@ -413,7 +476,15 @@ class ProductBulkHandler extends BaseBulkHandler
         return [
             'affected_count' => $finalAffectedCount,
             'parent_count' => $parentCount,
+            'simple_count' => $estimatedSimpleCount,
+            'variable_count' => $estimatedVariableCount,
             'variation_count' => max($sampleVariationCount, $estimatedVariationsCount),
+            'breakdown' => [
+                'simple' => $estimatedSimpleCount,
+                'variable' => $estimatedVariableCount,
+                'variation' => max($sampleVariationCount, $estimatedVariationsCount),
+                'total' => $finalAffectedCount,
+            ],
             'target' => $target,
             'sample' => $sampleItems,
             'warnings' => $warnings,
@@ -938,6 +1009,82 @@ class ProductBulkHandler extends BaseBulkHandler
                 } else {
                     $payload['status'] = $newStatus;
                     $newVal = ['status' => $newStatus];
+                }
+                break;
+
+            case 'set_sku':
+                $oldSku = (string)($prod['sku'] ?? '');
+                $oldVal = ['sku' => $oldSku];
+                $mode = $params['mode'] ?? 'set';
+                $val = trim((string)($params['value'] ?? ''));
+                if ($mode === 'prefix') {
+                    $newSku = $val . $oldSku;
+                } elseif ($mode === 'suffix') {
+                    $newSku = $oldSku . $val;
+                } else {
+                    $newSku = $val;
+                }
+
+                if ($oldSku === $newSku) {
+                    $skip = true;
+                    $skipReason = 'شناسه SKU تغییری نکرده است.';
+                    $newVal = $oldVal;
+                } else {
+                    $payload['sku'] = $newSku;
+                    $newVal = ['sku' => $newSku];
+                }
+                break;
+
+            case 'set_featured':
+                $oldFeatured = (bool)($prod['featured'] ?? false);
+                $oldVal = ['featured' => $oldFeatured];
+                $newFeatured = (bool)($params['featured'] ?? true);
+                if ($oldFeatured === $newFeatured) {
+                    $skip = true;
+                    $skipReason = 'وضعیت محصول ویژه تغییری نکرده است.';
+                    $newVal = $oldVal;
+                } else {
+                    $payload['featured'] = $newFeatured;
+                    $newVal = ['featured' => $newFeatured];
+                }
+                break;
+
+            case 'set_catalog_visibility':
+                $oldVis = (string)($prod['catalog_visibility'] ?? 'visible');
+                $oldVal = ['catalog_visibility' => $oldVis];
+                $newVis = (string)($params['visibility'] ?? 'visible');
+                if ($oldVis === $newVis) {
+                    $skip = true;
+                    $skipReason = 'قابلیت مشاهده در کاتالوگ تغییری نکرده است.';
+                    $newVal = $oldVal;
+                } else {
+                    $payload['catalog_visibility'] = $newVis;
+                    $newVal = ['catalog_visibility' => $newVis];
+                }
+                break;
+
+            case 'set_metadata':
+                $metaKey = trim((string)($params['key'] ?? ''));
+                $val = $params['value'] ?? '';
+                $action = $params['action'] ?? 'set';
+
+                $oldMetaVal = null;
+                if (!empty($prod['meta_data']) && is_array($prod['meta_data'])) {
+                    foreach ($prod['meta_data'] as $m) {
+                        if (($m['key'] ?? '') === $metaKey) {
+                            $oldMetaVal = $m['value'] ?? '';
+                            break;
+                        }
+                    }
+                }
+                $oldVal = ['key' => $metaKey, 'value' => $oldMetaVal];
+
+                if ($action === 'delete') {
+                    $payload['meta_data'] = [['key' => $metaKey, 'value' => null]];
+                    $newVal = ['key' => $metaKey, 'value' => null];
+                } else {
+                    $payload['meta_data'] = [['key' => $metaKey, 'value' => $val]];
+                    $newVal = ['key' => $metaKey, 'value' => $val];
                 }
                 break;
         }

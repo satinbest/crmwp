@@ -5,9 +5,6 @@
       <div>
         <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
           <span>اتوماسیون و گردش‌کار هوشمند</span>
-          <span class="text-xs bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold px-2 py-0.5 rounded-full border border-indigo-200/50 dark:border-indigo-800/50">
-            فاز ۱۵
-          </span>
         </h1>
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
           تعریف سناریوهای خودکار بر اساس رویدادهای ووکامرس، شروط پیشرفته و اقدامات بلادرنگ CRM
@@ -346,7 +343,7 @@
                     <Iconsax name="flash" size="16" :class="wizardForm.trigger_type === trig.type ? 'text-indigo-600' : 'text-slate-400'" />
                     <span class="text-xs">{{ trig.label }}</span>
                   </div>
-                  <span class="text-[10px] text-slate-400 font-mono">{{ trig.type }}</span>
+                  <span class="text-[10px] text-slate-400">{{ trig.type }}</span>
                 </div>
               </div>
             </div>
@@ -463,7 +460,7 @@
                   v-for="(lbl, tag) in availableVariables"
                   :key="tag"
                   @click="copyTag(tag)"
-                  class="px-2 py-0.5 rounded text-[10px] font-mono bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors"
+                  class="px-2 py-0.5 rounded text-[10px] bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors"
                   :title="lbl"
                 >
                   &#123;&#123;{{ tag }}&#125;&#125;
@@ -700,7 +697,7 @@
                       {{ pAct.status === 'would_execute' ? 'آماده اجرا' : 'نادیده گرفته شد' }}
                     </span>
                   </div>
-                  <pre class="text-[11px] font-mono text-slate-600 dark:text-slate-300 overflow-x-auto p-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">{{ JSON.stringify(pAct.simulated_config, null, 2) }}</pre>
+                  <pre class="text-[11px] text-slate-600 dark:text-slate-300 overflow-x-auto p-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">{{ JSON.stringify(pAct.simulated_config, null, 2) }}</pre>
                 </div>
               </div>
             </div>

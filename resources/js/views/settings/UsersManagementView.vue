@@ -422,7 +422,7 @@
                 />
                 <div class="min-w-0">
                   <div class="text-xs font-medium text-slate-800 dark:text-slate-200">{{ s.name }}</div>
-                  <div class="text-[10px] text-slate-400 font-mono truncate">{{ s.url }}</div>
+                  <div class="text-[10px] text-slate-400 truncate">{{ s.url }}</div>
                 </div>
               </label>
             </div>
@@ -627,8 +627,8 @@ const fetchInitialData = async () => {
       apiClient.get('/roles'),
       apiClient.get('/stores'),
     ]);
-    roles.value = rolesRes.data.roles || [];
-    stores.value = storesRes.data.stores || [];
+    roles.value = Array.isArray(rolesRes.data) ? rolesRes.data : (rolesRes.data?.roles || []);
+    stores.value = Array.isArray(storesRes.data) ? storesRes.data : (storesRes.data?.stores || []);
   } catch (err) {
     console.error('Failed to load roles or stores:', err);
   }
@@ -646,7 +646,7 @@ const fetchUsers = async () => {
       status: filters.status || undefined,
     };
     const res = await apiClient.get('/users', { params });
-    users.value = res.data.users || [];
+    users.value = Array.isArray(res.data) ? res.data : (res.data?.users || []);
     if (res.meta) {
       pagination.total = res.meta.total || 0;
       pagination.totalPages = res.meta.total_pages || 1;
@@ -826,7 +826,7 @@ const viewUserActivity = async (user) => {
   activityLoading.value = true;
   try {
     const res = await apiClient.get(`/users/${user.id}/activity`);
-    userActivities.value = res.data.activities || [];
+    userActivities.value = Array.isArray(res.data) ? res.data : (res.data?.activities || []);
   } catch (err) {
     console.error('Failed to load user activity:', err);
   } finally {

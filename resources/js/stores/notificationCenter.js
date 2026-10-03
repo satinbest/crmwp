@@ -31,7 +31,7 @@ export const useNotificationCenterStore = defineStore('notificationCenter', {
         const params = {};
         if (storeId) params.store_id = storeId;
         const res = await apiClient.get('/notifications/unread-count', { params });
-        this.unreadCount = res.data.data?.unread_count ?? 0;
+        this.unreadCount = res?.data?.unread_count ?? (typeof res?.unread_count === 'number' ? res.unread_count : 0);
         return this.unreadCount;
       } catch (err) {
         console.error('Failed to fetch unread count:', err);
@@ -43,15 +43,15 @@ export const useNotificationCenterStore = defineStore('notificationCenter', {
       this.loading = true;
       try {
         const res = await apiClient.get('/notifications', { params });
-        this.notifications = res.data.data || [];
-        this.meta = res.data.meta || {
+        this.notifications = Array.isArray(res?.data) ? res.data : (res?.data?.data || []);
+        this.meta = res?.meta || {
           current_page: 1,
           per_page: 20,
           total: this.notifications.length,
           total_pages: 1,
         };
-        if (typeof res.data.meta?.unread_count === 'number') {
-          this.unreadCount = res.data.meta.unread_count;
+        if (typeof res?.meta?.unread_count === 'number') {
+          this.unreadCount = res.meta.unread_count;
         }
         return this.notifications;
       } catch (err) {
@@ -124,8 +124,8 @@ export const useNotificationCenterStore = defineStore('notificationCenter', {
       this.prefsLoading = true;
       try {
         const res = await apiClient.get('/notifications/preferences');
-        if (res.data.data) {
-          this.preferences = { ...this.preferences, ...res.data.data };
+        if (res?.data) {
+          this.preferences = { ...this.preferences, ...(res.data.preferences || res.data) };
         }
         return this.preferences;
       } catch (err) {
@@ -140,8 +140,8 @@ export const useNotificationCenterStore = defineStore('notificationCenter', {
       const toast = useNotificationStore();
       try {
         const res = await apiClient.put('/notifications/preferences', data);
-        if (res.data.data) {
-          this.preferences = { ...this.preferences, ...res.data.data };
+        if (res?.data) {
+          this.preferences = { ...this.preferences, ...(res.data.preferences || res.data) };
         }
         toast.success('تنظیمات اعلان‌ها با موفقیت بروزرسانی شد.');
         return this.preferences;

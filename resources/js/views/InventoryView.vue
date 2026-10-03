@@ -421,7 +421,7 @@
               </td>
 
               <!-- SKU -->
-              <td class="p-3.5 font-mono text-slate-500 dark:text-slate-400 dir-ltr text-right">
+              <td class="p-3.5 text-slate-500 dark:text-slate-400 dir-ltr text-right">
                 {{ item.sku || '—' }}
               </td>
 
@@ -531,7 +531,7 @@
       @updated="onItemUpdated"
     />
 
-    <!-- Bulk Operations Dialog Component (Integrated with Phase 7 Bulk Engine) -->
+    <!-- Bulk Operations Dialog Component -->
     <BulkOperationDialog
       :is-open="showBulkDialog"
       entity="products"
@@ -662,8 +662,8 @@ const getStockQuantityClass = (item) => {
 const fetchMetrics = async () => {
   try {
     const res = await api.get('/inventory/metrics');
-    if (res.data?.success) {
-      Object.assign(metrics, res.data.data);
+    if (res.data) {
+      Object.assign(metrics, res.data);
     }
   } catch (err) {
     console.error('Error fetching inventory metrics:', err);
@@ -688,13 +688,13 @@ const fetchInventory = async () => {
     }
 
     const res = await api.get('/inventory', { params });
-    if (res.data?.success) {
-      items.value = res.data.data || [];
-      meta.total = res.data.meta?.total || 0;
-      meta.total_pages = res.data.meta?.total_pages || 1;
+    items.value = res.data || [];
+    if (res.meta) {
+      meta.total = res.meta.total || 0;
+      meta.total_pages = res.meta.total_pages || 1;
     }
   } catch (err) {
-    notification.error(err.response?.data?.error?.message || 'خطا در بارگذاری موجودی کالاها از ووکامرس');
+    notification.error(err.message || 'خطا در بارگذاری موجودی کالاها از ووکامرس');
   } finally {
     loading.value = false;
   }

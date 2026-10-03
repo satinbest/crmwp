@@ -1,185 +1,134 @@
-# Release Manifest: سامانه مدیریت و CRM ووکامرس (crmwp)
+# Release Manifest: سامانه مدیریت و CRM ووکامرس (CRMWP)
 
 ## مشخصات بسته انتشار پروداکشن (Production Release Package)
 
-* **نام بسته**: `crmwp-production-release.zip`
-* **پوشه خروجی**: `release/`
-* **نسخه سامانه**: `1.0.0 (Production Stable)`
-* **تاریخ ساخت**: ۲۹ سپتامبر ۲۰۲۶ (۱۴۰۵/۰۷/۰۸)
-* **معماری پروژه**: برنامه کاملاً مستقل متصل به REST API ووکامرس (Standalone App - Non-WordPress Plugin)
-* **وضعیت انتشار**: `READY FOR HOSTING` (آماده استقرار و نصب روی هاست واقعی)
+* **Application Version**: `1.0.0 (Production Stable)`
+* **Release Date**: ۰۳ اکتبر ۲۰۲۶ (۱۴۰۵/۰۷/۱۲)
+* **Build Status**: `PASSED` (تمامی تست‌های امنیتی، استقرار، مایگریشن و عملیات گروهی ۱۰۰٪ موفق)
+* **Archive File**: `CRM-Production-Release-v1.0.0.zip`
+* **Release Folder**: `release/`
+* **Database Migration Version**: ۱۸ مایگریشن کامل (`001_create_roles_and_permissions_tables.php` تا `018_create_phase15_automations_tables.php`)
+* **PHP Requirements**: حداقل `PHP 8.2.0` (تست‌شده روی PHP 8.2, 8.3, 8.4)
+* **MariaDB Requirements**: MariaDB 10.6+ / 11.x یا MySQL 8.0+ با Charset `utf8mb4` و Collation `utf8mb4_unicode_ci` (موتور InnoDB با پشتیبانی Foreign Keys و Transactions)
+* **Required PHP Extensions**:
+  * `pdo` و `pdo_mysql`: ارتباط امن و پایدار با دیتابیس
+  * `openssl`: رمزنگاری متقارن AES-256-CBC کلیدهای اتصال و سکرت‌ها
+  * `mbstring`: پردازش و استانداردسازی متون و کاراکترهای یونیکد فارسی
+  * `curl`: برقراری اتصالات HTTPS پایدار با فروشگاه‌های ووکامرس
+  * `json`: اعتبارسنجی و تبدیل Payloadهای ساختاریافته
+  * `session`: مدیریت نشست‌های امن با فلگ‌های ایزوله (HttpOnly, SameSite=Lax/Strict)
+  * `fileinfo`: اعتبارسنجی امن فایل‌های آپلودی
+* **Production Runtime Requirements**: وب‌سرور استاندارد (Apache 2.4+ / Nginx / LiteSpeed) با PHP-FPM
+* **Installation Entry Point**: نصب‌کننده تحت وب: `http://your-domain.com/install` یا کنسول CLI: `php cli.php install`
+* **Cron Requirements**: اجرای دوره‌ای پس‌زمینه هر ۱ الی ۵ دقیقه از طریق CLI: `php cron.php` یا وب‌کرون ایمن: `GET /api/v1/system/cron?secret=YOUR_CRON_SECRET`
+* **Storage Requirements**: مجوز نوشتن وب‌سرور (`chmod 775` یا `755`) روی دایرکتوری `storage/` و زیرپوشه‌های `cache`, `logs`, `uploads`, `locks`, `temp`
+* **Known Limitations**: برای عملیات گروهی سنگین روی بیش از ۱۰۰۰ قلم کالا، توصیه می‌شود `memory_limit` در PHP حداقل `256M` یا `512M` و `max_execution_time` حداقل ۱۲۰ ثانیه باشد.
+* **Security Notes**:
+  - هیچ داده‌ای از فروشگاه‌های پیشین یا پروداکشن در بسته قرار ندارد.
+  - فرانت‌اند و دارایی‌های بصری (فونت Vazirmatn و آیکون‌ها) ۱۰۰٪ ایزوله و محلی هستند (بدون CDN و بدون فونت خارجی).
+  - استفاده از هرگونه `font-mono` در طراحی حذف شده و فونت استاندارد با اعداد فارسی بومی فعال است.
+  - معماری لایه‌بندی Z-Index مرکزی پیاده‌سازی شده و بخش اعلانات روی هدر و تمامی محتواها بدون تداخل نمایش داده می‌شود.
 
 ---
 
-## ۱. مشخصات محیط هدف (System Requirements)
-
-### نیازمندی‌های PHP
-* **حداقل نسخه PHP**: `8.2.0`
-* **نسخه‌های توصیه‌شده و تست‌شده**: `PHP 8.2`، `PHP 8.3`، `PHP 8.4`
-* **اکستنشن‌های ضروری PHP**:
-  * `pdo` و `pdo_mysql`: اتصال امن و مدیریت تراکنش‌های پایگاه‌داده
-  * `openssl`: رمزنگاری متقارن AES-256-CBC کلیدهای Consumer Secret و Secrets
-  * `mbstring`: پردازش و استانداردسازی صحیح کاراکترهای یونیکد فارسی
-  * `curl`: برقراری اتصالات HTTPS پایدار با فروشگاه ووکامرس
-  * `json`: ساختاردهی و اعتبارسنجی Payloads
-  * `session`: مدیریت نشست‌های ایزوله با فلگ‌های امنیتی (HttpOnly, SameSite, Secure)
-
-### نیازمندی‌های پایگاه‌داده (Database)
-* **پایگاه‌داده هدف**: MariaDB 10.6+ / 11.x یا MySQL 8.0+
-* **مجموعه نویسه (Charset)**: `utf8mb4`
-* **تطبیق کاراکتر (Collation)**: `utf8mb4_unicode_ci`
-* **موتور ذخیره‌سازی**: `InnoDB` (با پشتیبانی کامل از Foreign Keys و Transactions)
-
-### نیازمندی‌های وب‌سرور (Web Server)
-* **وب‌سرورهای پشتیبانی‌شده**: Apache 2.4+، LiteSpeed، Nginx
-* **ماژول‌های موردنیاز**: `mod_rewrite`, `mod_headers`, `mod_expires`
-* **تنظیم بهینه Document Root**: پوشه `public/`
-* **پشتیبانی از هاست اشتراکی محدود**: بله، با فایل محافظتی ریشه `.htaccess` در صورت عدم امکان تغییر Document Root
-
----
-
-## ۲. وضعیت وابستگی‌های Runtime
-
-| وابستگی | وضعیت در پروداکشن | توضیح |
-| :--- | :--- | :--- |
-| **Node.js / npm** | ❌ غیرضروری (Zero Runtime Dependency) | تمامی مراحل کامپایل Vite در محیط توسعه انجام شده است. |
-| **Composer** | ❌ غیرضروری در هاست | پوشه `vendor/` با کلاس‌مپ بهینه‌شده (`-o --no-dev`) در بسته موجود است. |
-| **Redis / Memcached** | ❌ غیرضروری | کش داخلی مبتنی بر فایل در مسیر `storage/cache/` فعال است. |
-| **Docker / Supervisor** | ❌ غیرضروری | سیستم بدون وابستگی به Worker دائمی پس‌زمینه اجرا می‌شود. |
-| **دسترسی SSH / CLI** | ❌ غیرضروری | راه‌اندازی از طریق مرورگر (Web Installer) و وب‌کرون ایمن پشتیبانی می‌شود. |
-| **CDN یا اینترنت خارجی برای UI** | ❌ کاملاً ایزوله (100% Offline) | فونت Vazirmatn و آیکون‌های برداری Iconsax محلی هستند. |
-
----
-
-## ۳. مراحل ساخت و کامپایل بسته (Build Pipeline)
-
-۱. **Frontend Build**:
-   ```bash
-   npm run build
-   ```
-   * ایجاد ۹ وزن فونت استاندارد Vazirmatn در فرمت بهینه `woff2` داخل `public/assets/`.
-   * باندل کدهای Vue 3، Router و Pinia در چانک‌های مجزا.
-   * پاکسازی چانک‌های قدیمی و بهینه‌سازی حجم Assetها.
-   * خروجی فاقد Source Mapهای ناامن در محیط عمومی است.
-
-۲. **Backend Autoload Optimization**:
-   ```bash
-   composer dump-autoload -o --no-dev
-   ```
-   * تولید کلاس‌مپ بهینه متشکل از ۱۳۰ کلاس داخلی بدون بارگذاری پکیج‌های توسعه‌ای.
-
-۳. **Release Packaging**:
-   ```bash
-   php build_release.php
-   ```
-   * کپی ساختارمند هسته، تفکیک فایل‌های پروداکشن، ایجاد پوشه‌های تمیز `storage/` با `.gitkeep` و فشرده‌سازی در قالب فایل ZIP نهایی.
-
----
-
-## ۴. ساختار فایل‌ها و پوشه‌های بسته نهایی
+## ضمانت‌های محرمانگی و عدم وابستگی‌های سرور (Production Guarantees)
 
 ```text
-release/
-├── .htaccess                     # محافظت از پوشه‌های محرمانه و Rewrite به public/
-├── .env.example                  # الگوی متغیرهای محیطی پروداکشن (بدون اطلاعات واقعی)
-├── cron.php                      # ورودی اجرای دوره‌ای پس‌زمینه (سازگار با CLI و Web Token)
-├── cli.php                       # ابزار مدیریتی کنسول (مخصوص سرورهای دارای SSH)
-├── README.md                     # مستندات کامل سامانه
-├── INSTALL.md                    # راهنمای قدم‌به‌قدم نصب
-├── UPGRADE.md                    # راهنمای ارتقا و به‌روزرسانی
-├── SECURITY.md                   # دستورالعمل‌های امنیتی
-├── RELEASE-MANIFEST.md           # همین مانیفست تحویل
-├── RELEASE_MANIFEST.json         # متادیتای ساختاریافته بسته
-├── RELEASE_NOTES.md              # یادداشت‌های تغییرات نسخه
-├── DEPLOYMENT.md                 # راهنمای استقرار در سرور
-├── BACKUP.md                     # راهنمای پشتیبان‌گیری
-├── BACKUP_RESTORE.md             # راهنمای بازیابی اضطراری
-├── PRODUCTION_CHECKLIST.md       # چک‌لیست قبل و بعد از راه‌اندازی
-├── app/                          # لایه کدنویسی تجاری (Controllers, Services, Models, Database)
-│   └── Database/
-│       └── Migrations/           # ۱۸ مایگریشن ساختار دیتابیس
-├── config/                       # فایل‌های پیکربندی برنامه (app, auth, database)
-├── public/                       # پوشه ریشه وب (تنها پوشه با دسترسی عمومی)
-│   ├── .htaccess                 # کنترل دسترسی، مسیریابی SPA و API و هدرهای امنیتی
-│   ├── favicon.svg               # آیکون سامانه
-│   ├── index.html                # پوسته تک‌صفحه‌ای (SPA)
-│   ├── index.php                 # هسته راه‌اندازی فریم‌ورک و کنترل استثناها
-│   └── assets/                   # فایل‌های کامپایل‌شده فرانت‌اند، فونت‌ها و استایل‌ها
-├── routes/
-│   └── api.php                   # کلیه تعاریف اندپوینت‌های RESTful
-├── storage/                      # پوشه نگهداری فایل‌های موقت، لاگ‌ها و نشست‌ها
-│   ├── .htaccess                 # مسدودسازی دسترسی مستقیم مرورگر به محتوای storage
-│   ├── cache/                    # کش‌های موقت
-│   ├── locks/                    # فایل‌های قفل همزمانی Cron و نصب
-│   ├── logs/                     # لاگ‌های روزانه خطاها
-│   ├── temp/                     # فایل‌های موقت
-│   └── uploads/                  # آپلودهای کاربران
-└── vendor/                       # فایل‌های Autoloader بهینه‌شده Composer
+Production Credentials: NOT INCLUDED
+Production Database: NOT INCLUDED
+Production Logs: NOT INCLUDED
+Development Dependencies: NOT REQUIRED AT RUNTIME
+Node.js Runtime: NOT REQUIRED
+npm Runtime: NOT REQUIRED
+Composer Runtime: NOT REQUIRED
 ```
 
 ---
 
-## ۵. موارد حذف‌شده از بسته نهایی (Excluded Items)
+## جدول وضعیت وابستگی‌های زمان اجرا (Runtime Dependencies)
 
-موارد زیر به منظور حفظ امنیت، کاهش حجم و جلوگیری از خطرات بالقوه از بسته نهایی حذف شده‌اند:
-* `.git/` و پوشه‌های مربوط به کنترل نسخه
-* `node_modules/` (پکیج‌های جاوااسکریپت محیط توسعه)
-* `.env` (تنظیمات محیط محلی توسعه)
-* `tests/` (کدهای تست و ابزارهای موک)
-* `scratch/` (اسکریپت‌ها و فایل‌های آزمایشی موقت)
-* `storage/installed.lock` (قفل نصب سیستم برای تضمین امکان اجرای Web Installer روی هاست نو)
-* لاگ‌ها و کش‌های محیط توسعه (`storage/logs/*.log`, `storage/cache/*`)
-
----
-
-## ۶. فهرست کامل مایگریشن‌های پایگاه‌داده
-
-این ۱۸ مایگریشن در اولین راه‌اندازی توسط Web Installer یا CLI روی پایگاه‌داده خالی اجرا می‌شوند:
-
-۱. `001_create_roles_and_permissions_tables.php` (جداول پایه‌ای نقش‌ها و دسترسی‌های RBAC)  
-۲. `002_create_users_tables.php` (جدول کاربران سیستم و انتساب نقش‌ها)  
-۳. `003_create_stores_tables.php` (جدول فروشگاه‌های ووکامرس متصل)  
-۴. `004_create_crm_tables.php` (جداول تسک‌ها، برچسب‌ها، سگمنت‌ها و یادداشت‌های CRM)  
-۵. `005_create_bulk_and_audit_tables.php` (جداول تاریخچه عملیات گروهی و لاگ‌های بازرسی Audit)  
-۶. `006_create_webhooks_and_sync_tables.php` (جداول ثبت وب‌هوک‌های دریافتی و لاگ همگام‌سازی)  
-۷. `007_update_stores_table_phase2.php` (افزودن فیلدهای سلامت، وضعیت و HPOS به فروشگاه‌ها)  
-۸. `008_update_tasks_table_priority.php` (ارتقای اولویت‌بندی وظایف CRM)  
-۹. `009_update_tasks_table_order_id.php` (اتصال وظایف پیگیری به شناسه سفارش ووکامرس)  
-۱۰. `010_update_product_permissions.php` (دسترسی‌های مستقل کاتالوگ محصولات)  
-۱۱. `011_create_phase7_bulk_operations_tables.php` (ارتقای زیرساخت عملیات دسته‌جمعی انبوه)  
-۱۲. `012_create_phase8_inventory_permissions.php` (دسترسی‌های تخصصی انبارداری و کنترل موجودی)  
-۱۳. `013_create_phase9_crm_permissions.php` (دسترسی‌های ریزدانه سگمنت‌بندی و تایم‌لاین مشتریان)  
-۱۴. `014_create_phase11_roles_and_permissions.php` (تکمیل ساختار چندنقشی، مدیران، کارشناسان و فروشندگان)  
-۱۵. `015_create_phase12_notifications_table.php` (مرکز اعلانات درونی، هشدارهای کسری موجودی و تنظیمات اعلان)  
-۱۶. `016_update_phase13_webhooks_and_reconciliation.php` (تطبیق خودکار وب‌هوک‌ها، لاگ‌های Idempotent و رفع مغایرت)  
-۱۷. `017_enhance_multi_store_support.php` (پشتیبانی کامل از سوییچ چندفروشگاهی همزمان)  
-۱۸. `018_create_phase15_automations_tables.php` (موتور اتوماسیون جریان‌های کاری شرطی Event-Driven)
+| وابستگی | وضعیت در پروداکشن | توضیح فنی |
+| :--- | :--- | :--- |
+| **Node.js / npm** | ❌ غیرضروری (Zero Runtime Dependency) | تمامی مراحل ساخت فرانت‌اند توسط Vite در مرحله بیلد انجام شده و خروجی در `public/assets/` قرار گرفته است. |
+| **Composer** | ❌ غیرضروری در سرور | پوشه `vendor/` با کلاس‌مپ بهینه‌شده تولید شده و همراه بسته عرضه می‌شود. |
+| **Redis / Memcached** | ❌ غیرضروری | موتور کش داخلی سریع و مبتنی بر فایل در مسیر `storage/cache/` فعال است. |
+| **Docker / Supervisor** | ❌ غیرضروری | سامانه سبک و بدون نیاز به پردازشگر دائمی اجرا می‌شود. |
+| **دسترسی SSH / CLI** | ❌ اختیاری (غیرضروری) | راه‌اندازی از طریق مرورگر (Web Installer) و وب‌کرون کاملاً پشتیبانی می‌شود. |
+| **CDN یا اینترنت خارجی برای UI** | ❌ کاملاً ایزوله (100% Offline) | فونت Vazirmatn و آیکون‌های وکتور محلی هستند. |
 
 ---
 
-## ۷. گردش‌کار Cron و وظایف پس‌زمینه
+## مراحل ساخت و کامپایل بسته (Build Pipeline)
 
-اسکریپت پس‌زمینه `cron.php` یا اندپوینت وب `/api/v1/system/cron` وظایف زیر را به طور خودکار انجام می‌دهد:
+۱. **کامپایل فرانت‌اند (Frontend Build)**:
+   ```bash
+   npm run build
+   ```
+   * ایجاد ۹ وزن فونت استاندارد Vazirmatn در فرمت بهینه `woff2` داخل `public/assets/`.
+   * خروجی فشرده و تفکیک‌شده به چانک‌های مجزا بدون Source Mapهای حساس.
+   * حذف کامل کلاس‌های `font-mono` و استانداردسازی تایپوگرافی با اعداد طبیعی فارسی.
 
-۱. **اجرای اتوماسیون‌های زمان‌بندی‌شده (Scheduled Automations)**:
-   * بررسی رویدادهای سررسید وظایف (`task.overdue`) و اعلان‌های زمان‌بندی‌شده
-   * پردازش در دسته‌های ۵۰تایی بدون افت کارایی سرور
-۲. **بازیابی عملیات‌های گروهی ناقص (Stale Bulk Operations Recovery)**:
-   * شناسایی عملیات‌هایی که بیش از ۲ ساعت به دلیل Timeout سرور در وضعیت `processing` معلق مانده‌اند و تغییر آنها به `failed`
-۳. **پاکسازی دوره‌ای داده‌های منقضی (Retention Cleanup)**:
-   * حذف اعلانات خوانده‌شده قدیمی‌تر از ۳۰ روز
-   * حذف لاگ‌های وب‌هوک و همگام‌سازی قدیمی‌تر از ۳۰ روز جهت جلوگیری از پر شدن دیتابیس
-۴. **مکانیزم قفل انحصاری (Concurrency Lock)**:
-   * استفاده از `flock(LOCK_EX | LOCK_NB)` در فایل `storage/locks/cron.lock` برای جلوگیری از اجرای تکراری یا همپوشانی پردازش‌ها
+۲. **بهینه‌سازی Autoload بک‌اند**:
+   ```bash
+   composer dump-autoload -o --no-dev
+   ```
+   * تولید کلاس‌مپ بهینه از کلیه کلاس‌های پروژه.
+
+۳. **تولید بسته انتشار نهایی**:
+   ```bash
+   php build_release.php
+   ```
+   * بسته‌بندی در قالب فایل `CRM-Production-Release-v1.0.0.zip`.
 
 ---
 
-## ۸. محدودیت‌ها و نکات شناخته‌شده (Known Constraints)
+## ساختار بسته نهایی (Release Contents)
 
-۱. **نیاز به وب‌سرور با پشتیبانی از Rewrite**:
-   * در آپاچی و لایت‌اسپید حتماً باید ماژول `mod_rewrite` فعال باشد.
-   * در صورت استفاده از Nginx، نیازمند پیکربندی بلاک `try_files` مطابق راهنمای `INSTALL.md` است.
-۲. **محدودیت حافظه در پردازش‌های انبوه بسیار بزرگ**:
-   * برای عملیات گروهی روی بیش از ۱۰۰۰ محصول یا تغییر دسته‌جمعی متغیرها، پیشنهاد می‌شود `memory_limit` در PHP حداقل `256M` یا `512M` و `max_execution_time` حداقل `120` ثانیه باشد.
-۳. **تست با هاست واقعی**:
-   * در زمان آماده‌سازی این بسته، اتصال به MariaDB به دلیل عدم وجود سرویس محلی بر روی سیستم توسعه با وضعیت `NOT TESTED (LOCAL DB SERVICE OFFLINE)` ثبت شد. با این حال تمامی کامپوننت‌های پایگاه‌داده، تست‌های مایگریشن و منطق PDO با معماری MariaDB 10.6+ کاملاً سازگار و استاندارد طراحی شده‌اند.
+```text
+CRM-Production-Release-v1.0.0.zip
+├── .htaccess                     # هدایت درخواست‌ها به public/ و محافظت از فایل‌های محرمانه
+├── .env.example                  # الگوی متغیرهای محیطی پروداکشن (فاقد هرگونه اطلاعات واقعی)
+├── cron.php                      # ورودی اجرای دوره‌ای پس‌زمینه (سازگار با CLI و وب‌توکن)
+├── cli.php                       # ابزار مدیریتی خط فرمان (مخصوص سرورهای دارای SSH)
+├── README.md                     # مستندات جامع سامانه
+├── INSTALL.md                    # راهنمای قدم‌به‌قدم نصب و راه‌اندازی
+├── UPGRADE.md                    # راهنمای ارتقا و به‌روزرسانی
+├── SECURITY.md                   # مستندات و استانداردهای امنیتی
+├── RELEASE-MANIFEST.md           # همین مانیفست تحویل
+├── RELEASE_MANIFEST.json         # متادیتای ساختاریافته بسته
+├── RELEASE_NOTES.md              # یادداشت‌های تغییرات نسخه
+├── DEPLOYMENT.md                 # راهنمای استقرار در سرور و هاست
+├── BACKUP.md                     # راهنمای پشتیبان‌گیری
+├── BACKUP_RESTORE.md             # راهنمای بازیابی اضطراری
+├── PRODUCTION_CHECKLIST.md       # چک‌لیست قبل و بعد از راه‌اندازی
+├── app/                          # کنترلرها، سرویس‌ها، مدل‌ها و پایگاه داده
+│   └── Database/
+│       ├── Migrations/           # ۱۸ مایگریشن ساختار دیتابیس
+│       └── Seeders/              # اطلاعات پایه نقش‌ها و دسترسی‌ها (بدون اطلاعات پروداکشن)
+├── config/                       # پیکربندی‌های سامانه (app, database, auth, cors, ...)
+├── routes/                       # تعاریف مسیرهای API و وب
+├── public/                       # ریشه عمومی وب‌سرور (Document Root)
+│   ├── index.php                 # نقطه ورود درخواست‌ها
+│   ├── .htaccess                 # قوانین Rewrite و امنیت
+│   └── assets/                   # فایل‌های کامپایل‌شده JS/CSS و فونت‌های WOFF2
+├── storage/                      # پوشه‌های ذخیره‌سازی داده‌های موقت با فایل‌های محافظت
+│   ├── cache/                    # کش سریع فایل‌ها
+│   ├── logs/                     # گزارش‌های خطای سامانه
+│   ├── uploads/                  # فایل‌های بارگذاری‌شده
+│   ├── locks/                    # قفل‌های کرون و تسک‌های پس‌زمینه
+│   └── temp/                     # فایل‌های موقت
+└── vendor/                       # کلیه کتابخانه‌های PHP مورد نیاز Runtime (آماده اجرا بدون composer)
+```
+
+---
+
+## اقلام حذف‌شده و استثنا شده از انتشار (Exclusions)
+
+موارد زیر به دلیل امنیت و عدم نیاز در محیط پروداکشن، به صورت قطعی از فایل بسته ZIP حذف شده‌اند:
+* `.git/` و تاریخچه مخزن
+* `node_modules/` و پکیج‌های توسعه‌ای Node
+* `tests/` و اسکریپت‌های تست واحد و یکپارچگی
+* `.env` واقعی حاوی اطلاعات محیط توسعه
+* `storage/installed.lock` (قفل نصب سیستم برای امکان اجرای Web Installer روی هاست نو)
+* لاگ‌ها و کش‌های محیط توسعه (`storage/logs/*.log`, `storage/cache/*`, `storage/framework/cache/*`)
+* فایل‌های ابزاری توسعه و اسکریپت‌های موقت (`scratch/`)

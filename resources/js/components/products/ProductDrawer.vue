@@ -72,7 +72,7 @@
             </div>
 
             <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mt-2">
-              <span>کد کالا: <span class="font-mono dir-ltr inline-block">{{ product.sku || 'ندارد' }}</span></span>
+              <span>کد کالا: <span class="dir-ltr inline-block">{{ product.sku || 'ندارد' }}</span></span>
               <span v-if="product.variations_count > 0" class="text-indigo-600 dark:text-indigo-400 font-medium">
                 {{ formatNumber(product.variations_count) }} متغیر
               </span>
@@ -256,13 +256,13 @@ const fetchProduct = async () => {
   loading.value = true;
   try {
     const res = await api.get(`/products/${props.productId}`);
-    if (res.data?.success) {
-      product.value = res.data.data;
-      quickStatus.value = product.value.status;
-      quickStockStatus.value = product.value.stock_status;
+    if (res?.success !== false) {
+      product.value = res.data;
+      quickStatus.value = product.value?.status || 'publish';
+      quickStockStatus.value = product.value?.stock_status || 'instock';
     }
   } catch (err) {
-    notification.error(err.response?.data?.error?.message || 'خطا در دریافت اطلاعات محصول');
+    notification.error(err.message || 'خطا در دریافت اطلاعات محصول');
     emit('close');
   } finally {
     loading.value = false;
@@ -327,14 +327,14 @@ const updateQuickStatus = async () => {
   savingStatus.value = true;
   try {
     const res = await api.patch(`/products/${product.value.id}`, { status: quickStatus.value });
-    if (res.data?.success) {
-      product.value = res.data.data;
+    if (res?.success !== false) {
+      product.value = res.data;
       notification.success('وضعیت محصول با موفقیت تغییر یافت.');
       emit('product-updated', product.value);
     }
   } catch (err) {
     quickStatus.value = product.value.status;
-    notification.error(err.response?.data?.error?.message || 'خطا در تغییر وضعیت محصول');
+    notification.error(err.message || 'خطا در تغییر وضعیت محصول');
   } finally {
     savingStatus.value = false;
   }
@@ -345,14 +345,14 @@ const updateQuickStock = async () => {
   savingStatus.value = true;
   try {
     const res = await api.patch(`/products/${product.value.id}`, { stock_status: quickStockStatus.value });
-    if (res.data?.success) {
-      product.value = res.data.data;
+    if (res?.success !== false) {
+      product.value = res.data;
       notification.success('وضعیت موجودی کالا بروز شد.');
       emit('product-updated', product.value);
     }
   } catch (err) {
     quickStockStatus.value = product.value.stock_status;
-    notification.error(err.response?.data?.error?.message || 'خطا در تغییر وضعیت موجودی');
+    notification.error(err.message || 'خطا در تغییر وضعیت موجودی');
   } finally {
     savingStatus.value = false;
   }

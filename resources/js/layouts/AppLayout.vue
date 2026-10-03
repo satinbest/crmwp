@@ -2,8 +2,8 @@
   <div class="min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans">
     <!-- Sidebar -->
     <aside
-      class="fixed inset-y-0 right-0 z-30 w-64 bg-white dark:bg-slate-900 border-l border-slate-200/80 dark:border-slate-800/80 flex flex-col transition-transform duration-300 md:translate-x-0"
-      :class="isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'"
+      class="fixed inset-y-0 right-0 z-sidebar-layer w-64 bg-white dark:bg-slate-900 border-l border-slate-200/80 dark:border-slate-800/80 flex flex-col transition-transform duration-300 md:translate-x-0"
+      :class="isMobileMenuOpen ? 'translate-x-0 !z-modal-layer' : 'translate-x-full md:translate-x-0'"
     >
       <!-- Brand Header -->
       <div class="h-16 flex items-center justify-between px-5 border-b border-slate-100 dark:border-slate-800/60">
@@ -68,40 +68,31 @@
             <router-link
               v-if="authStore.hasPermission('orders.view')"
               to="/orders"
-              class="flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+              class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
               :class="isCurrentRoute('/orders') || route.path.startsWith('/orders/') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'"
             >
-              <div class="flex items-center gap-3">
-                <Iconsax name="orders" size="19" />
-                <span>سفارش‌ها</span>
-              </div>
-              <span class="text-[10px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400 px-1.5 py-0.5 rounded font-medium">فعال</span>
+              <Iconsax name="orders" size="19" />
+              <span>سفارش‌ها</span>
             </router-link>
 
             <router-link
               v-if="authStore.hasPermission('products.view')"
               to="/products"
-              class="flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+              class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
               :class="isCurrentRoute('/products') || route.path.startsWith('/products/') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'"
             >
-              <div class="flex items-center gap-3">
-                <Iconsax name="products" size="19" />
-                <span>محصولات</span>
-              </div>
-              <span class="text-[10px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400 px-1.5 py-0.5 rounded font-medium">فعال</span>
+              <Iconsax name="products" size="19" />
+              <span>محصولات</span>
             </router-link>
 
             <router-link
               v-if="authStore.hasPermission('inventory.view')"
               to="/inventory"
-              class="flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+              class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
               :class="isCurrentRoute('/inventory') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'"
             >
-              <div class="flex items-center gap-3">
-                <Iconsax name="inventory" size="19" />
-                <span>انبار و موجودی</span>
-              </div>
-              <span class="text-[10px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400 px-1.5 py-0.5 rounded font-medium">فعال</span>
+              <Iconsax name="inventory" size="19" />
+              <span>انبار و موجودی</span>
             </router-link>
           </div>
         </div>
@@ -113,79 +104,61 @@
             <router-link
               v-if="authStore.hasPermission('crm.view')"
               to="/crm"
-              class="flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+              class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
               :class="isCurrentRoute('/crm') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'"
             >
-              <div class="flex items-center gap-3">
-                <Iconsax name="dashboard" size="19" />
-                <span>پیشخوان CRM</span>
-              </div>
-              <span class="text-[10px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400 px-1.5 py-0.5 rounded font-medium">فعال</span>
+              <Iconsax name="dashboard" size="19" />
+              <span>پیشخوان CRM</span>
             </router-link>
 
             <router-link
               v-if="authStore.hasPermission('customers.view')"
               to="/customers"
-              class="flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+              class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
               :class="isCurrentRoute('/customers') || route.path.startsWith('/customers/') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'"
             >
-              <div class="flex items-center gap-3">
-                <Iconsax name="customers" size="19" />
-                <span>مشتریان</span>
-              </div>
-              <span class="text-[10px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400 px-1.5 py-0.5 rounded font-medium">فعال</span>
+              <Iconsax name="customers" size="19" />
+              <span>مشتریان</span>
             </router-link>
 
             <router-link
               v-if="authStore.hasPermission('segments.view')"
               to="/crm/segments"
-              class="flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+              class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
               :class="isCurrentRoute('/crm/segments') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'"
             >
-              <div class="flex items-center gap-3">
-                <Iconsax name="segments" size="19" />
-                <span>بخش‌بندی‌ها (Segments)</span>
-              </div>
-              <span class="text-[10px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400 px-1.5 py-0.5 rounded font-medium">فعال</span>
+              <Iconsax name="segments" size="19" />
+              <span>بخش‌بندی‌ها (Segments)</span>
             </router-link>
 
             <router-link
               v-if="authStore.hasPermission('tags.view')"
               to="/crm/tags"
-              class="flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+              class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
               :class="isCurrentRoute('/crm/tags') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'"
             >
-              <div class="flex items-center gap-3">
-                <Iconsax name="tag" size="19" />
-                <span>برچسب‌ها (Tags)</span>
-              </div>
-              <span class="text-[10px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400 px-1.5 py-0.5 rounded font-medium">فعال</span>
+              <Iconsax name="tag" size="19" />
+              <span>برچسب‌ها (Tags)</span>
             </router-link>
 
             <router-link
               v-if="authStore.hasPermission('tasks.view')"
               to="/crm/tasks"
-              class="flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+              class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
               :class="isCurrentRoute('/crm/tasks') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'"
             >
-              <div class="flex items-center gap-3">
-                <Iconsax name="task" size="19" />
-                <span>وظایف (Tasks)</span>
-              </div>
-              <span class="text-[10px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400 px-1.5 py-0.5 rounded font-medium">فعال</span>
+              <Iconsax name="task" size="19" />
+              <span>وظایف (Tasks)</span>
             </router-link>
 
             <router-link
               v-if="authStore.hasPermission('activities.view')"
               to="/crm/activities"
-              class="flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+              class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
               :class="isCurrentRoute('/crm/activities') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'"
             >
-              <div class="flex items-center gap-3">
-                <Iconsax name="activity" size="19" />
-                <span>فعالیت‌ها (Activities)</span>
-              </div>
-              <span class="text-[10px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400 px-1.5 py-0.5 rounded font-medium">فعال</span>
+              <Iconsax name="activity" size="19" />
+              <span>فعالیت‌ها (Activities)</span>
             </router-link>
           </div>
         </div>
@@ -217,27 +190,21 @@
             <router-link
               v-if="authStore.hasPermission('bulk.view')"
               to="/bulk-operations"
-              class="flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+              class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
               :class="isCurrentRoute('/bulk-operations') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'"
             >
-              <div class="flex items-center gap-3">
-                <Iconsax name="bulk" size="19" />
-                <span>عملیات گروهی</span>
-              </div>
-              <span class="text-[10px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400 px-1.5 py-0.5 rounded font-medium">فعال</span>
+              <Iconsax name="bulk" size="19" />
+              <span>عملیات گروهی</span>
             </router-link>
 
             <router-link
               v-if="authStore.hasPermission('automations.view')"
               to="/automations"
-              class="flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+              class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
               :class="isCurrentRoute('/automations') || route.path.startsWith('/automations/') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'"
             >
-              <div class="flex items-center gap-3">
-                <Iconsax name="flash" size="19" />
-                <span>اتوماسیون و گردش‌کار</span>
-              </div>
-              <span class="text-[10px] bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400 px-1.5 py-0.5 rounded font-medium">هوشمند</span>
+              <Iconsax name="flash" size="19" />
+              <span>اتوماسیون و گردش‌کار</span>
             </router-link>
 
             <router-link
@@ -257,6 +224,15 @@
             >
               <Iconsax name="settings" size="19" />
               <span>تنظیمات سامانه</span>
+            </router-link>
+
+            <router-link
+              to="/settings/about"
+              class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+              :class="isCurrentRoute('/settings/about') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'"
+            >
+              <Iconsax name="shop" size="19" />
+              <span>درباره برنامه</span>
             </router-link>
           </div>
         </div>
@@ -307,13 +283,13 @@
     <div
       v-if="isMobileMenuOpen"
       @click="isMobileMenuOpen = false"
-      class="fixed inset-0 z-20 bg-slate-900/50 backdrop-blur-sm md:hidden"
+      class="fixed inset-0 z-drawer-layer bg-slate-900/50 backdrop-blur-sm md:hidden"
     ></div>
 
     <!-- Main Content Area -->
     <div class="flex-1 flex flex-col md:mr-64 transition-all">
       <!-- Top Bar -->
-      <header class="h-16 sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-4 md:px-6 flex items-center justify-between">
+      <header class="h-16 sticky top-0 z-topbar-layer bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-4 md:px-6 flex items-center justify-between">
         <div class="flex items-center gap-2 sm:gap-3">
           <button
             @click="isMobileMenuOpen = true"
@@ -332,7 +308,7 @@
           >
             <Iconsax name="search" size="16" class="text-slate-400" />
             <span>جستجو یا دستور سریع...</span>
-            <kbd class="font-mono bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded text-[10px] text-slate-500">Ctrl + K</kbd>
+            <kbd class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded text-[10px] text-slate-500">Ctrl + K</kbd>
           </button>
         </div>
 

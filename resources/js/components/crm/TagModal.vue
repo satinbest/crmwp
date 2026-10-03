@@ -41,7 +41,7 @@
             <input
               v-model="form.color"
               type="text"
-              class="w-full rounded-xl px-3 py-1.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-mono text-xs"
+              class="w-full rounded-xl px-3 py-1.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs"
             />
           </div>
           <!-- Presets -->

@@ -45,7 +45,7 @@
             </span>
           </div>
           <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-1">
-            <span class="dir-ltr font-mono">{{ storeContext.activeStore.url }}</span>
+            <span class="dir-ltr">{{ storeContext.activeStore.url }}</span>
             <span>•</span>
             <span>واحد پولی: <strong class="dir-ltr text-indigo-600 dark:text-indigo-400">{{ storeContext.activeStore.currency || 'IRR' }}</strong></span>
             <span>•</span>
@@ -64,7 +64,7 @@
       </div>
     </div>
 
-    <!-- Phase 1 System Health Cards -->
+    <!-- System Health Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <!-- Database Card -->
       <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 shadow-sm">
@@ -79,7 +79,7 @@
             <span>MariaDB</span>
             <span class="text-xs font-normal text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-full">متصل</span>
           </div>
-          <div class="text-[11px] text-slate-400 mt-1 font-mono">نسخه: {{ healthData?.database?.version || '13.0.2-MariaDB' }}</div>
+          <div class="text-[11px] text-slate-400 mt-1">نسخه: {{ healthData?.database?.version || '13.0.2-MariaDB' }}</div>
         </div>
       </div>
 
@@ -94,9 +94,8 @@
         <div class="mt-3">
           <div class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <span>REST API</span>
-            <span class="text-xs font-normal text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded-full">فعال</span>
           </div>
-          <div class="text-[11px] text-slate-400 mt-1 font-mono">PHP {{ healthData?.php_version || '8.4' }} / Clean Layered</div>
+          <div class="text-[11px] text-slate-400 mt-1">PHP {{ healthData?.php_version || '8.4' }}</div>
         </div>
       </div>
 
@@ -113,7 +112,7 @@
             <span>Server Session</span>
             <span class="text-xs font-normal text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950 px-2 py-0.5 rounded-full">HttpOnly</span>
           </div>
-          <div class="text-[11px] text-slate-400 mt-1">محافظت CSRF و RateLimit فعال</div>
+          <div class="text-[11px] text-slate-400 mt-1">محافظت CSRF و RateLimit</div>
         </div>
       </div>
 
@@ -127,10 +126,9 @@
         </div>
         <div class="mt-3">
           <div class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <span>۶ نقش سیستمی</span>
-            <span class="text-xs font-normal text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950 px-2 py-0.5 rounded-full">۲۲ مجوز</span>
+            <span>{{ toPersianDigits(authStore.permissions.length) }} مجوز فعال</span>
           </div>
-          <div class="text-[11px] text-slate-400 mt-1">تعداد مجوزهای کاربر جاری: {{ toPersianDigits(authStore.permissions.length) }}</div>
+          <div class="text-[11px] text-slate-400 mt-1">مدیریت دسترسی‌های کاربر جاری</div>
         </div>
       </div>
     </div>
@@ -139,7 +137,7 @@
     <div class="bg-gradient-to-br from-indigo-900/90 to-slate-900 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden border border-indigo-800/40 shadow-xl">
       <div class="relative z-10 max-w-3xl">
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold mb-4 border border-indigo-400/20">
-          <span>اصل بنیادین معماری فاز ۰ و ۱</span>
+          <span>معماری مستقل و امن</span>
         </div>
         <h2 class="text-xl sm:text-2xl font-black mb-3">تفکیک کامل سامانه مدیریتی و CRM از پایگاه داده وردپرس</h2>
         <p class="text-xs sm:text-sm text-indigo-100/90 leading-relaxed mb-6">
@@ -163,7 +161,7 @@
       </div>
     </div>
 
-    <!-- Phase 8 Inventory Alerts & Overview Widget -->
+    <!-- Inventory Alerts & Overview Widget -->
     <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-6 shadow-sm space-y-4">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2.5">
@@ -276,7 +274,7 @@
       </div>
     </div>
 
-    <!-- Phase 13 Integration Health Widget -->
+    <!-- Integration Health Widget -->
     <div v-if="integrationHealth" class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-6 shadow-sm space-y-4">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2.5">
@@ -362,7 +360,7 @@
         <span
           v-for="perm in authStore.permissions"
           :key="perm"
-          class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60"
+          class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60"
         >
           {{ perm }}
         </span>

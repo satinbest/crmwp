@@ -29,7 +29,7 @@
     >
       <div
         v-if="isOpen"
-        class="absolute left-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 z-50 overflow-hidden flex flex-col max-h-[520px]"
+        class="absolute left-0 mt-2 w-80 sm:w-96 max-w-[calc(100vw-2rem)] sm:max-w-none bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 z-notification-layer overflow-hidden flex flex-col max-h-[520px]"
       >
         <!-- Panel Header -->
         <div class="p-3.5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-sm">

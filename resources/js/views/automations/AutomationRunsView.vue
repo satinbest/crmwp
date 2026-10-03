@@ -100,8 +100,8 @@
               </td>
 
               <td class="py-3 px-4">
-                <div class="font-mono dir-ltr text-right text-slate-700 dark:text-slate-300 font-semibold">{{ run.trigger_type }}</div>
-                <div class="text-[10px] text-slate-400 font-mono dir-ltr text-right">{{ run.event_id || 'manual' }}</div>
+                <div class="dir-ltr text-right text-slate-700 dark:text-slate-300 font-semibold">{{ run.trigger_type }}</div>
+                <div class="text-[10px] text-slate-400 dir-ltr text-right">{{ run.event_id || 'manual' }}</div>
               </td>
 
               <td class="py-3 px-4 text-slate-600 dark:text-slate-300">
@@ -155,7 +155,7 @@
                 جزئیات اجرای اتوماسیون
               </h2>
               <div class="text-[11px] text-slate-500 dark:text-slate-400">
-                رویداد: <span class="font-mono dir-ltr">{{ selectedRun.trigger_type }}</span> | زمان: {{ formatDateTime(selectedRun.created_at) }}
+                رویداد: <span class="dir-ltr">{{ selectedRun.trigger_type }}</span> | زمان: {{ formatDateTime(selectedRun.created_at) }}
               </div>
             </div>
           </div>
@@ -180,7 +180,7 @@
             </div>
             <div>
               <span class="text-slate-400 block text-[10px]">کلید یکتایی (Idempotency):</span>
-              <span class="font-mono dir-ltr text-[10px] text-slate-600 dark:text-slate-300 truncate block" :title="selectedRun.idempotency_key">
+              <span class="dir-ltr text-[10px] text-slate-600 dark:text-slate-300 truncate block" :title="selectedRun.idempotency_key">
                 {{ selectedRun.idempotency_key ? selectedRun.idempotency_key.substring(0, 16) + '...' : '—' }}
               </span>
             </div>
@@ -193,7 +193,7 @@
           <!-- Error trace if failed -->
           <div v-if="selectedRun.error" class="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-xl text-rose-800 dark:text-rose-300">
             <span class="font-bold block mb-1">خطای اجرا:</span>
-            <div class="font-mono dir-ltr text-[11px]">{{ selectedRun.error }}</div>
+            <div class="dir-ltr text-[11px]">{{ selectedRun.error }}</div>
           </div>
 
           <!-- Action Results Breakdown -->
@@ -206,7 +206,7 @@
               :class="r.status === 'success' ? 'bg-emerald-50/50 dark:bg-emerald-950/30 border-emerald-200/60 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300' : 'bg-rose-50/50 dark:bg-rose-950/30 border-rose-200/60 dark:border-rose-800/50 text-rose-800 dark:text-rose-300'"
             >
               <div>
-                <span class="font-bold">اقدام {{ toPersianDigits(idx + 1) }}: <span class="font-mono dir-ltr">{{ r.type }}</span></span>
+                <span class="font-bold">اقدام {{ toPersianDigits(idx + 1) }}: <span class="dir-ltr">{{ r.type }}</span></span>
                 <div v-if="r.error" class="text-[10px] text-rose-600 dark:text-rose-400 mt-0.5">{{ r.error }}</div>
               </div>
               <span class="px-2 py-0.5 rounded text-[10px] font-bold" :class="r.status === 'success' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'">
@@ -218,7 +218,7 @@
           <!-- Raw Execution Payload -->
           <div>
             <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-1.5">کالبد رویداد (Event Payload - Sanitized):</h4>
-            <pre class="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 font-mono dir-ltr text-[11px] text-slate-700 dark:text-slate-300 overflow-x-auto max-h-52">{{ JSON.stringify(selectedRun.context?.event || selectedRun.context, null, 2) }}</pre>
+            <pre class="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 dir-ltr text-[11px] text-slate-700 dark:text-slate-300 overflow-x-auto max-h-52">{{ JSON.stringify(selectedRun.context?.event || selectedRun.context, null, 2) }}</pre>
           </div>
         </div>
       </div>

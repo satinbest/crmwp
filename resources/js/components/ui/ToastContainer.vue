@@ -1,5 +1,5 @@
 <template>
-  <div class="fixed bottom-5 left-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+  <div class="fixed bottom-5 left-5 z-toast-layer flex flex-col gap-2 max-w-sm w-full pointer-events-none">
     <transition-group
       enter-active-class="transform ease-out duration-300 transition"
       enter-from-class="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"

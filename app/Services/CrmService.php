@@ -69,102 +69,96 @@ class CrmService
      */
     public function getSummary(int $storeId, ?int $currentUserId = null): array
     {
-        $cacheKey = "crm_summary_{$storeId}_user_" . ($currentUserId ?? 0);
-        $cached = Cache::get($cacheKey);
-        if ($cached !== null) {
-            return $cached;
-        }
+        return Cache::storeRemember($storeId, 'crm_summary', 'user_' . ($currentUserId ?? 0), Cache::TTL_DASHBOARD, function () use ($storeId, $currentUserId) {
+            // 1. Task metrics
+            $taskMetrics = $this->taskRepository->countMetrics($storeId, $currentUserId);
 
-        // 1. Task metrics
-        $taskMetrics = $this->taskRepository->countMetrics($storeId, $currentUserId);
+            // 2. Segment & Tag counts
+            $segmentsCount = $this->segmentRepository->countByStore($storeId);
+            $tagsCount = $this->tagRepository->countStoreTags($storeId);
 
-        // 2. Segment & Tag counts
-        $segmentsCount = $this->segmentRepository->countByStore($storeId);
-        $tagsCount = $this->tagRepository->countStoreTags($storeId);
-
-        // 3. Tasks needing attention (overdue or high/urgent priority)
-        $tasksNeedingAttention = $this->taskRepository->listStoreTasks($storeId, [
-            'limit' => 5,
-            'view' => 'overdue',
-        ], $currentUserId);
-
-        if (empty($tasksNeedingAttention)) {
+            // 3. Tasks needing attention (overdue or high/urgent priority)
             $tasksNeedingAttention = $this->taskRepository->listStoreTasks($storeId, [
                 'limit' => 5,
-                'priority' => 'urgent',
+                'view' => 'overdue',
             ], $currentUserId);
-        }
 
-        // 4. Upcoming tasks
-        $upcomingTasks = $this->taskRepository->listStoreTasks($storeId, [
-            'limit' => 5,
-            'view' => 'upcoming',
-        ], $currentUserId);
-
-        // 5. Recent activities
-        $recentActivities = $this->activityRepository->listStoreActivities($storeId, [
-            'limit' => 8,
-        ]);
-
-        // 6. Recent segments
-        $recentSegments = $this->segmentRepository->listByStore($storeId);
-        $recentSegments = array_slice($recentSegments, 0, 5);
-
-        // 7. Customers requiring follow-up (customers with open overdue tasks or tasks due today)
-        $followUpCustomerIds = $this->getCustomersRequiringFollowUpIds($storeId);
-        $customersRequiringFollowUp = [];
-        if (!empty($followUpCustomerIds)) {
-            try {
-                $adapter = $this->getCustomerAdapter($storeId);
-                foreach (array_slice($followUpCustomerIds, 0, 5) as $cid) {
-                    $c = $adapter->getCustomer($cid);
-                    if ($c) {
-                        $customersRequiringFollowUp[] = [
-                            'id' => $c['id'],
-                            'name' => trim(($c['first_name'] ?? '') . ' ' . ($c['last_name'] ?? '')) ?: ($c['username'] ?? 'مشتری #' . $c['id']),
-                            'email' => $c['email'] ?? '',
-                            'orders_count' => $c['orders_count'] ?? 0,
-                            'total_spent' => $c['total_spent'] ?? 0,
-                        ];
-                    }
-                }
-            } catch (Throwable $e) {
-                Logger::warning("Could not fetch WooCommerce follow-up customer details: " . $e->getMessage());
+            if (empty($tasksNeedingAttention)) {
+                $tasksNeedingAttention = $this->taskRepository->listStoreTasks($storeId, [
+                    'limit' => 5,
+                    'priority' => 'urgent',
+                ], $currentUserId);
             }
-        }
 
-        $summary = [
-            'kpis' => [
-                'open_tasks' => $taskMetrics['open_tasks'],
-                'overdue_tasks' => $taskMetrics['overdue_tasks'],
-                'due_today' => $taskMetrics['due_today'],
-                'upcoming_tasks' => $taskMetrics['upcoming_tasks'],
-                'completed_tasks' => $taskMetrics['completed_tasks'],
-                'my_open_tasks' => $taskMetrics['my_open_tasks'],
-                'segments_count' => $segmentsCount,
-                'tags_count' => $tagsCount,
-            ],
-            'tasks_needing_attention' => $tasksNeedingAttention,
-            'upcoming_tasks' => $upcomingTasks,
-            'recent_activities' => $recentActivities,
-            'recent_segments' => $recentSegments,
-            'customers_requiring_follow_up' => $customersRequiringFollowUp,
-        ];
+            // 4. Upcoming tasks
+            $upcomingTasks = $this->taskRepository->listStoreTasks($storeId, [
+                'limit' => 5,
+                'view' => 'upcoming',
+            ], $currentUserId);
 
-        Cache::set($cacheKey, $summary, 60); // 1 minute TTL
-        return $summary;
+            // 5. Recent activities
+            $recentActivities = $this->activityRepository->listStoreActivities($storeId, [
+                'limit' => 8,
+            ]);
+
+            // 6. Recent segments
+            $recentSegments = $this->segmentRepository->listByStore($storeId);
+            $recentSegments = array_slice($recentSegments, 0, 5);
+
+            // 7. Customers requiring follow-up (customers with open overdue tasks or tasks due today)
+            $followUpCustomerIds = $this->getCustomersRequiringFollowUpIds($storeId);
+            $customersRequiringFollowUp = [];
+            if (!empty($followUpCustomerIds)) {
+                try {
+                    $adapter = $this->getCustomerAdapter($storeId);
+                    foreach (array_slice($followUpCustomerIds, 0, 5) as $cid) {
+                        $c = $adapter->getCustomer($cid);
+                        if ($c) {
+                            $customersRequiringFollowUp[] = [
+                                'id' => $c['id'],
+                                'name' => trim(($c['first_name'] ?? '') . ' ' . ($c['last_name'] ?? '')) ?: ($c['username'] ?? 'مشتری #' . $c['id']),
+                                'email' => $c['email'] ?? '',
+                                'orders_count' => $c['orders_count'] ?? 0,
+                                'total_spent' => $c['total_spent'] ?? 0,
+                            ];
+                        }
+                    }
+                } catch (Throwable $e) {
+                    Logger::warning("Could not fetch WooCommerce follow-up customer details: " . $e->getMessage());
+                }
+            }
+
+            return [
+                'kpis' => [
+                    'open_tasks' => $taskMetrics['open_tasks'],
+                    'overdue_tasks' => $taskMetrics['overdue_tasks'],
+                    'due_today' => $taskMetrics['due_today'],
+                    'upcoming_tasks' => $taskMetrics['upcoming_tasks'],
+                    'completed_tasks' => $taskMetrics['completed_tasks'],
+                    'my_open_tasks' => $taskMetrics['my_open_tasks'],
+                    'segments_count' => $segmentsCount,
+                    'tags_count' => $tagsCount,
+                ],
+                'tasks_needing_attention' => $tasksNeedingAttention,
+                'upcoming_tasks' => $upcomingTasks,
+                'recent_activities' => $recentActivities,
+                'recent_segments' => $recentSegments,
+                'customers_requiring_follow_up' => $customersRequiringFollowUp,
+            ];
+        });
     }
 
     private function getCustomersRequiringFollowUpIds(int $storeId): array
     {
         $stmt = $this->pdo->prepare("
-            SELECT DISTINCT wc_customer_id
+            SELECT wc_customer_id
             FROM tasks
             WHERE store_id = :store_id
               AND wc_customer_id IS NOT NULL
               AND status NOT IN ('completed', 'cancelled')
               AND (due_date < NOW() OR DATE(due_date) = CURDATE() OR priority IN ('high', 'urgent'))
-            ORDER BY id DESC
+            GROUP BY wc_customer_id
+            ORDER BY MAX(id) DESC
             LIMIT 10
         ");
         $stmt->execute(['store_id' => $storeId]);

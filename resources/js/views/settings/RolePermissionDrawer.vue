@@ -130,7 +130,7 @@
                   <div class="text-xs font-semibold text-slate-800 dark:text-slate-200">
                     {{ perm.display_name || perm.name }}
                   </div>
-                  <div class="text-[10px] font-mono text-slate-400 truncate dir-ltr text-right">
+                  <div class="text-[10px] text-slate-400 truncate dir-ltr text-right">
                     {{ perm.name }}
                   </div>
                   <div v-if="perm.description" class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
@@ -252,8 +252,28 @@ const loadPermissions = async () => {
       apiClient.get(`/roles/${props.role.id}/permissions`),
     ]);
 
-    rawGroups.value = allPermsRes.data.permissions || {};
-    const rolePerms = rolePermsRes.data.permissions || [];
+    // Handle array of groups or dictionary of groups
+    const permsData = allPermsRes.data;
+    if (Array.isArray(permsData)) {
+      const groups = {};
+      for (const item of permsData) {
+        if (item.group_key && Array.isArray(item.permissions)) {
+          groups[item.group_key] = item.permissions;
+        }
+      }
+      rawGroups.value = groups;
+    } else if (permsData?.permissions) {
+      rawGroups.value = permsData.permissions;
+    } else if (typeof permsData === 'object' && permsData !== null) {
+      rawGroups.value = permsData;
+    } else {
+      rawGroups.value = {};
+    }
+
+    const rolePerms = Array.isArray(rolePermsRes.data)
+      ? rolePermsRes.data
+      : (rolePermsRes.data?.permissions || []);
+
     selectedPermissions.value = rolePerms.map(p => (typeof p === 'string' ? p : p.name));
   } catch (err) {
     console.error('Failed to load permissions:', err);

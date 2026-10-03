@@ -52,7 +52,7 @@
               </span>
               <span class="text-xs text-slate-400">#{{ toPersianDigits(product.id) }}</span>
               <span v-if="product.sku" class="text-xs text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
-                <span>کد کالا: </span><span class="font-mono dir-ltr inline-block">{{ product.sku }}</span>
+                <span>کد کالا: </span><span class="dir-ltr inline-block">{{ product.sku }}</span>
               </span>
             </div>
             <h1 class="text-xl font-bold text-slate-800 dark:text-slate-100">
@@ -358,7 +358,7 @@
                       {{ a.name }}: {{ a.option }}
                     </span>
                   </td>
-                  <td class="p-3 font-mono text-slate-500 dir-ltr text-right">{{ v.sku || '—' }}</td>
+                  <td class="p-3 text-slate-500 dir-ltr text-right">{{ v.sku || '—' }}</td>
                   <td class="p-3 font-bold">{{ formatPrice(v.regular_price) }}</td>
                   <td class="p-3 font-bold text-indigo-600">{{ v.sale_price ? formatPrice(v.sale_price) : '—' }}</td>
                   <td class="p-3">
@@ -483,8 +483,8 @@
             :key="key"
             class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-100 dark:border-slate-800 text-xs"
           >
-            <span class="font-mono text-slate-600 dark:text-slate-300 dir-ltr text-left">{{ key }}</span>
-            <span class="text-slate-500 font-mono dir-ltr text-left">{{ typeof val === 'object' ? JSON.stringify(val) : val }}</span>
+            <span class="text-slate-600 dark:text-slate-300 dir-ltr text-left">{{ key }}</span>
+            <span class="text-slate-500 dir-ltr text-left">{{ typeof val === 'object' ? JSON.stringify(val) : val }}</span>
           </div>
         </div>
       </div>
@@ -648,8 +648,8 @@ const fetchProduct = async () => {
   loading.value = true;
   try {
     const res = await api.get(`/products/${productId}`);
-    if (res.data?.success) {
-      product.value = res.data.data;
+    if (res.data) {
+      product.value = res.data;
 
       // Populate form
       form.name = product.value.name;
@@ -677,7 +677,7 @@ const fetchProduct = async () => {
       }
     }
   } catch (err) {
-    notification.error(err.response?.data?.error?.message || 'خطا در بارگذاری اطلاعات محصول');
+    notification.error(err.message || 'خطا در بارگذاری اطلاعات محصول');
   } finally {
     loading.value = false;
   }
@@ -687,9 +687,7 @@ const fetchVariations = async () => {
   loadingVariations.value = true;
   try {
     const res = await api.get(`/products/${productId}/variations`);
-    if (res.data?.success) {
-      variations.value = res.data.data || [];
-    }
+    variations.value = res.data || [];
   } catch (err) {
     console.error('Variations error:', err);
   } finally {
@@ -703,8 +701,8 @@ const fetchTaxonomies = async () => {
       api.get('/product-categories'),
       api.get('/product-tags'),
     ]);
-    if (catRes.data?.success) allCategories.value = catRes.data.data || [];
-    if (tagRes.data?.success) allTags.value = tagRes.data.data || [];
+    allCategories.value = catRes.data || [];
+    allTags.value = tagRes.data || [];
   } catch (err) {
     console.error('Taxonomies error:', err);
   }
@@ -734,12 +732,12 @@ const saveProduct = async () => {
     };
 
     const res = await api.patch(`/products/${productId}`, payload);
-    if (res.data?.success) {
-      product.value = res.data.data;
+    if (res.data) {
+      product.value = res.data;
       notification.success('تغییرات محصول با موفقیت در ووکامرس ذخیره شد.');
     }
   } catch (err) {
-    notification.error(err.response?.data?.error?.message || 'خطا در ذخیره تغییرات محصول');
+    notification.error(err.message || 'خطا در ذخیره تغییرات محصول');
   } finally {
     saving.value = false;
   }
@@ -779,12 +777,12 @@ const saveVariation = async () => {
 
     if (variationForm.id) {
       const res = await api.patch(`/products/${productId}/variations/${variationForm.id}`, payload);
-      if (res.data?.success) {
+      if (res.success || res.data) {
         notification.success('متغیر کالا با موفقیت بروزرسانی شد.');
       }
     } else {
       const res = await api.post(`/products/${productId}/variations`, payload);
-      if (res.data?.success) {
+      if (res.success || res.data) {
         notification.success('متغیر جدید با موفقیت ایجاد شد.');
       }
     }
@@ -792,7 +790,7 @@ const saveVariation = async () => {
     isVariationModalOpen.value = false;
     fetchVariations();
   } catch (err) {
-    notification.error(err.response?.data?.error?.message || 'خطا در ثبت متغیر');
+    notification.error(err.message || 'خطا در ثبت متغیر');
   } finally {
     savingVariation.value = false;
   }
@@ -802,12 +800,12 @@ const deleteVariation = async (varId) => {
   if (!confirm(`آیا از حذف متغیر #${varId} اطمینان دارید؟`)) return;
   try {
     const res = await api.delete(`/products/${productId}/variations/${varId}`);
-    if (res.data?.success) {
+    if (res.success || res.data) {
       notification.success('متغیر کالا با موفقیت حذف گردید.');
       fetchVariations();
     }
   } catch (err) {
-    notification.error(err.response?.data?.error?.message || 'خطا در حذف متغیر');
+    notification.error(err.message || 'خطا در حذف متغیر');
   }
 };
 

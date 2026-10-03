@@ -123,7 +123,7 @@
                 </div>
                 <div class="text-[11px] text-slate-400 mt-0.5">
                   تعداد: {{ formatNumber(item.quantity) }} × {{ formatPrice(item.price) }}
-                  <span v-if="item.sku">• SKU: <span class="font-mono dir-ltr inline-block">{{ item.sku }}</span></span>
+                  <span v-if="item.sku">• SKU: <span class="dir-ltr inline-block">{{ item.sku }}</span></span>
                 </div>
               </div>
               <div class="font-bold text-slate-900 dark:text-slate-100 shrink-0">

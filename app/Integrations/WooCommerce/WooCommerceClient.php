@@ -154,6 +154,11 @@ class WooCommerceClient
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, !$isLocal);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, $isLocal ? 0 : 2);
 
+        $caBundle = dirname(__DIR__, 3) . '/storage/cacert.pem';
+        if (file_exists($caBundle)) {
+            curl_setopt($ch, CURLOPT_CAINFO, $caBundle);
+        }
+
         // Authentication: Basic Auth
         curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
         curl_setopt($ch, CURLOPT_USERPWD, "{$this->consumerKey}:{$this->consumerSecret}");

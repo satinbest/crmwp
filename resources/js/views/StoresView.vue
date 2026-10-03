@@ -36,7 +36,7 @@
       </div>
       <div class="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
         <span class="font-bold text-slate-900 dark:text-white">امنیت و مرز ارتباطی: </span>
-        مرورگر هرگز مستقیماً با ووکامرس ارتباط برقرار نمی‌کند. کلیدهای دسترسی (Consumer Key و Consumer Secret) با الگوریتم <span class="font-mono font-bold text-indigo-600 dark:text-indigo-400">AES-256-CBC</span> در دیتابیس سامانه رمزنگاری شده و در هیچ لاگ یا پاسخ عادی API درج نمی‌شوند.
+        مرورگر هرگز مستقیماً با ووکامرس ارتباط برقرار نمی‌کند. کلیدهای دسترسی (Consumer Key و Consumer Secret) با الگوریتم <span class="font-bold text-indigo-600 dark:text-indigo-400">AES-256-CBC</span> در دیتابیس سامانه رمزنگاری شده و در هیچ لاگ یا پاسخ عادی API درج نمی‌شوند.
       </div>
     </div>
 
@@ -87,7 +87,7 @@
                 <a
                   :href="store.url"
                   target="_blank"
-                  class="text-xs text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1 font-mono mt-0.5"
+                  class="text-xs text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1 mt-0.5"
                 >
                   <span>{{ store.url }}</span>
                 </a>
@@ -116,21 +116,21 @@
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-4 p-3.5 bg-slate-50 dark:bg-slate-850 rounded-2xl border border-slate-100 dark:border-slate-800/80 text-xs">
             <div>
               <div class="text-[10px] text-slate-400">ووکامرس</div>
-              <div class="font-bold text-slate-800 dark:text-slate-200 mt-0.5 font-mono">
+              <div class="font-bold text-slate-800 dark:text-slate-200 mt-0.5">
                 {{ store.woocommerce_version || store.wc_version || '—' }}
               </div>
             </div>
 
             <div>
               <div class="text-[10px] text-slate-400">وردپرس</div>
-              <div class="font-bold text-slate-800 dark:text-slate-200 mt-0.5 font-mono">
+              <div class="font-bold text-slate-800 dark:text-slate-200 mt-0.5">
                 {{ store.wordpress_version || store.wp_version || '—' }}
               </div>
             </div>
 
             <div>
               <div class="text-[10px] text-slate-400">واحد پول</div>
-              <div class="font-bold text-slate-800 dark:text-slate-200 mt-0.5 font-mono">
+              <div class="font-bold text-slate-800 dark:text-slate-200 mt-0.5">
                 {{ store.currency || 'IRR' }}
               </div>
             </div>
@@ -144,7 +144,7 @@
           </div>
 
           <!-- Credentials Preview (Masked) -->
-          <div class="space-y-1.5 text-xs text-slate-500 font-mono bg-slate-100/60 dark:bg-slate-950/40 p-3 rounded-xl border border-slate-200/50 dark:border-slate-800/60 mb-4">
+          <div class="space-y-1.5 text-xs text-slate-500 bg-slate-100/60 dark:bg-slate-950/40 p-3 rounded-xl border border-slate-200/50 dark:border-slate-800/60 mb-4">
             <div class="flex items-center justify-between">
               <span class="text-slate-400">Consumer Key:</span>
               <span class="font-semibold">{{ store.consumer_key_masked }}</span>
@@ -179,7 +179,7 @@
               <span>سلامت</span>
             </button>
 
-            <!-- Webhook & Reconcile Button (Phase 13) -->
+            <!-- Webhook & Reconcile Button -->
             <button
               @click="openIntegrationModal(store)"
               class="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-semibold transition-colors"
@@ -214,9 +214,7 @@
               @click="toggleStoreStatus(store)"
               :disabled="togglingStoreId === store.id"
               class="px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors disabled:opacity-50"
-              :class="store.status === 'active'
-                ? 'border-amber-200 dark:border-amber-800/80 text-amber-700 dark:text-amber-300 bg-amber-50/50 dark:bg-amber-950/40 hover:bg-amber-100'
-                : 'border-emerald-200 dark:border-emerald-800/80 text-emerald-700 dark:text-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/40 hover:bg-emerald-100'"
+              :class="store.status === 'active' ? 'border-amber-200 dark:border-amber-800/80 text-amber-700 dark:text-amber-300 bg-amber-50/50 dark:bg-amber-950/40 hover:bg-amber-100' : 'border-emerald-200 dark:border-emerald-800/80 text-emerald-700 dark:text-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/40 hover:bg-emerald-100'"
               :title="store.status === 'active' ? 'غیرفعال‌سازی موقت فروشگاه' : 'فعال‌سازی مجدد فروشگاه'"
             >
               {{ store.status === 'active' ? 'غیرفعال‌سازی' : 'فعال‌سازی' }}
@@ -305,7 +303,7 @@
                 v-model="addForm.url"
                 type="text"
                 placeholder="https://myshop.com"
-                class="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                class="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500"
               />
               <div class="text-[11px] text-slate-400 mt-1 leading-relaxed">
                 لطفاً آدرس ریشه سایت را وارد کنید. از وارد کردن مسیرهای اضافی نظیر <code class="text-rose-500">/wp-admin</code> یا <code class="text-rose-500">/wp-json</code> خودداری نمایید.
@@ -326,7 +324,7 @@
                 v-model="addForm.consumer_key"
                 type="text"
                 placeholder="ck_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                class="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                class="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500"
               />
             </div>
 
@@ -336,7 +334,7 @@
                 v-model="addForm.consumer_secret"
                 type="password"
                 placeholder="cs_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                class="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                class="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500"
               />
             </div>
           </div>
@@ -373,11 +371,11 @@
             <div class="bg-slate-50 dark:bg-slate-850 rounded-2xl p-4 border border-slate-200/60 dark:border-slate-800/80 space-y-2 text-xs">
               <div class="flex justify-between py-1 border-b border-slate-200/40 dark:border-slate-800">
                 <span class="text-slate-400">نسخه ووکامرس:</span>
-                <span class="font-bold font-mono">{{ connectionResult?.woocommerce_version }}</span>
+                <span class="font-bold">{{ connectionResult?.woocommerce_version }}</span>
               </div>
               <div class="flex justify-between py-1 border-b border-slate-200/40 dark:border-slate-800">
                 <span class="text-slate-400">نسخه وردپرس:</span>
-                <span class="font-bold font-mono">{{ connectionResult?.wordpress_version }}</span>
+                <span class="font-bold">{{ connectionResult?.wordpress_version }}</span>
               </div>
               <div class="flex justify-between py-1 border-b border-slate-200/40 dark:border-slate-800">
                 <span class="text-slate-400">وضعیت جداول پرسرعت سفارش‌ها (HPOS):</span>
@@ -387,7 +385,7 @@
               </div>
               <div class="flex justify-between py-1 border-b border-slate-200/40 dark:border-slate-800">
                 <span class="text-slate-400">واحد پول فروشگاه:</span>
-                <span class="font-bold font-mono">{{ connectionResult?.currency }} ({{ connectionResult?.currency_symbol }})</span>
+                <span class="font-bold">{{ connectionResult?.currency }} ({{ connectionResult?.currency_symbol }})</span>
               </div>
               <div class="flex justify-between py-1">
                 <span class="text-slate-400">منطقه زمانی:</span>
@@ -478,7 +476,7 @@
               v-model="editForm.url"
               type="text"
               required
-              class="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+              class="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500"
             />
           </div>
 
@@ -491,13 +489,13 @@
                 v-model="editForm.consumer_key"
                 type="text"
                 placeholder="Consumer Key جدید (خالی بگذارید تا تغییر نکند)"
-                class="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                class="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500"
               />
               <input
                 v-model="editForm.consumer_secret"
                 type="password"
                 placeholder="Consumer Secret جدید (خالی بگذارید تا تغییر نکند)"
-                class="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                class="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500"
               />
             </div>
           </div>
@@ -713,7 +711,7 @@
                   </div>
                 </div>
               </div>
-              <span class="text-xs font-mono font-bold" :class="healthSummary.connection?.api_available ? 'text-emerald-600' : 'text-rose-600'">
+              <span class="text-xs font-bold" :class="healthSummary.connection?.api_available ? 'text-emerald-600' : 'text-rose-600'">
                 {{ healthSummary.connection?.status }}
               </span>
             </div>
@@ -776,7 +774,7 @@
       </div>
     </div>
 
-    <!-- Store Integration (Webhooks, Reconcile, Health) Modal (Phase 13) -->
+    <!-- Store Integration (Webhooks, Reconcile, Health) Modal -->
     <StoreIntegrationModal
       v-model="showIntegrationModal"
       :store="selectedIntegrationStore"
@@ -800,7 +798,7 @@ const stores = ref([]);
 const loading = ref(true);
 const testingStoreId = ref(null);
 
-// Phase 13 Integration Modal State
+// Store Integration Modal State
 const showIntegrationModal = ref(false);
 const selectedIntegrationStore = ref(null);
 

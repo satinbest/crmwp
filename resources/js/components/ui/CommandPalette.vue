@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isOpen" class="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-slate-900/60 backdrop-blur-sm">
+  <div v-if="isOpen" class="fixed inset-0 z-command-palette-layer flex items-start justify-center pt-20 px-4 bg-slate-900/60 backdrop-blur-sm">
     <div
       class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden transition-all"
       @click.stop
@@ -18,7 +18,7 @@
           @keydown.up.prevent="moveSelection(-1)"
           @keydown.enter="executeSelected"
         />
-        <span class="text-[10px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">ESC</span>
+        <span class="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">ESC</span>
       </div>
 
       <!-- Action List -->
@@ -46,7 +46,7 @@
               <div class="text-xs text-slate-400">{{ action.category }}</div>
             </div>
           </div>
-          <span v-if="action.shortcut" class="text-xs font-mono opacity-60">{{ action.shortcut }}</span>
+          <span v-if="action.shortcut" class="text-xs opacity-60">{{ action.shortcut }}</span>
         </div>
       </div>
 

@@ -14,7 +14,7 @@
       <!-- Development / Error Details -->
       <div v-if="errorDetails" class="text-right p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-rose-600 dark:text-rose-400 overflow-x-auto max-h-40">
         <div class="font-bold text-[11px] text-slate-500 mb-1 font-sans">پیام خطا:</div>
-        <div class="font-mono dir-ltr text-left">{{ errorDetails }}</div>
+        <div class="dir-ltr text-left">{{ errorDetails }}</div>
       </div>
 
       <div class="flex items-center justify-center gap-3 pt-2">

@@ -30,7 +30,7 @@
       <!-- Currency Badge -->
       <span
         v-if="storeContext.activeStore?.currency"
-        class="hidden sm:inline-flex text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60"
+        class="hidden sm:inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60"
       >
         {{ storeContext.activeStore.currency }}
       </span>
@@ -55,7 +55,7 @@
     >
       <div
         v-if="isOpen"
-        class="absolute right-0 mt-2 w-72 sm:w-84 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 z-50 overflow-hidden flex flex-col"
+        class="absolute right-0 mt-2 w-72 sm:w-84 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 z-dropdown-layer overflow-hidden flex flex-col"
       >
         <!-- Panel Header -->
         <div class="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-850/70">
@@ -89,17 +89,13 @@
             :key="store.id"
             @click="switchStore(store)"
             class="w-full flex items-center justify-between p-2.5 rounded-xl text-right transition-colors group"
-            :class="store.id === storeContext.activeStore?.id
-              ? 'bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-800/40 text-indigo-900 dark:text-indigo-100 font-medium'
-              : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-200 border border-transparent'"
+            :class="store.id === storeContext.activeStore?.id ? 'bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-800/40 text-indigo-900 dark:text-indigo-100 font-medium' : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-200 border border-transparent'"
           >
             <div class="flex items-start gap-2.5 min-w-0 flex-1">
               <!-- Store Icon / Status Avatar -->
               <div
                 class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 border"
-                :class="store.id === storeContext.activeStore?.id
-                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 group-hover:border-indigo-300'"
+                :class="store.id === storeContext.activeStore?.id ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 group-hover:border-indigo-300'"
               >
                 <Iconsax :name="store.icon || 'shop'" size="16" />
               </div>
@@ -110,7 +106,7 @@
                   <span class="text-xs font-bold truncate">{{ store.name }}</span>
                   <span
                     v-if="store.is_demo"
-                    class="text-[9px] px-1 py-0.2 rounded bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 font-mono"
+                    class="text-[9px] px-1 py-0.2 rounded bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
                   >
                     DEMO
                   </span>
@@ -129,7 +125,7 @@
 
                   <span class="text-slate-300 dark:text-slate-600">•</span>
 
-                  <span class="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                  <span class="text-[10px] text-slate-500 dark:text-slate-400">
                     {{ store.currency || 'IRR' }}
                   </span>
 

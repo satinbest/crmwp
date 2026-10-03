@@ -69,6 +69,19 @@
   --btn-danger-hover: #be123c;
   --btn-danger-active: #9f1239;
   --btn-danger-text: #ffffff;
+
+  /* Centralized Layering Hierarchy (Z-Index Tokens) */
+  --z-base: 0;
+  --z-sticky-content: 10;
+  --z-sidebar: 30;
+  --z-topbar: 40;
+  --z-dropdown: 50;
+  --z-notification-panel: 60;
+  --z-drawer: 70;
+  --z-modal: 80;
+  --z-command-palette: 90;
+  --z-toast: 100;
+  --z-tooltip: 110;
 }
 
 .dark, [data-theme="dark"] {
@@ -423,3 +436,17 @@
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
+
+/* Centralized Z-Index Layering Utility Classes */
+.z-base-layer { z-index: var(--z-base); }
+.z-sticky-layer { z-index: var(--z-sticky-content); }
+.z-sidebar-layer { z-index: var(--z-sidebar); }
+.z-topbar-layer { z-index: var(--z-topbar); }
+.z-dropdown-layer { z-index: var(--z-dropdown); }
+.z-notification-layer { z-index: var(--z-notification-panel); }
+.z-drawer-layer { z-index: var(--z-drawer); }
+.z-modal-layer { z-index: var(--z-modal); }
+.z-command-palette-layer { z-index: var(--z-command-palette); }
+.z-toast-layer { z-index: var(--z-toast); }
+.z-tooltip-layer { z-index: var(--z-tooltip); }
+

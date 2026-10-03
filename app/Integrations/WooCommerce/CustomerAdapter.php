@@ -3,6 +3,7 @@
 namespace App\Integrations\WooCommerce;
 
 use App\Models\Store;
+use App\Support\Cache;
 use App\Support\Logger;
 use Exception;
 
@@ -83,24 +84,32 @@ class CustomerAdapter
             $wcParams['role'] = $params['role'];
         }
 
-        $response = $this->client->getWithHeaders('/customers', $wcParams);
-        $rawList = is_array($response['data']) ? $response['data'] : [];
-        $headers = $response['headers'] ?? [];
+        $fetcher = function () use ($wcParams, $page, $perPage) {
+            $response = $this->client->getWithHeaders('/customers', $wcParams);
+            $rawList = is_array($response['data']) ? $response['data'] : [];
+            $headers = $response['headers'] ?? [];
 
-        $total = isset($headers['x-wp-total']) ? (int)$headers['x-wp-total'] : count($rawList);
-        $totalPages = isset($headers['x-wp-totalpages']) ? (int)$headers['x-wp-totalpages'] : (int)ceil($total / $perPage);
+            $total = isset($headers['x-wp-total']) ? (int)$headers['x-wp-total'] : count($rawList);
+            $totalPages = isset($headers['x-wp-totalpages']) ? (int)$headers['x-wp-totalpages'] : (int)ceil($total / $perPage);
 
-        $normalized = CustomerNormalizer::normalizeCollection($rawList, $this->storeId);
+            $normalized = CustomerNormalizer::normalizeCollection($rawList, $this->storeId);
 
-        return [
-            'data' => $normalized,
-            'meta' => [
-                'current_page' => $page,
-                'per_page' => $perPage,
-                'total' => $total,
-                'total_pages' => $totalPages,
-            ],
-        ];
+            return [
+                'data' => $normalized,
+                'meta' => [
+                    'current_page' => $page,
+                    'per_page' => $perPage,
+                    'total' => $total,
+                    'total_pages' => $totalPages,
+                ],
+            ];
+        };
+
+        if ($this->storeId > 0) {
+            return Cache::storeRememberQuery($this->storeId, 'customers', $wcParams, Cache::TTL_CUSTOMERS, $fetcher);
+        }
+
+        return $fetcher();
     }
 
     /**
@@ -113,19 +122,27 @@ class CustomerAdapter
             return $raw ? CustomerNormalizer::normalize($raw, $this->storeId) : null;
         }
 
-        try {
-            $raw = $this->client->get("/customers/{$id}");
-            if (empty($raw) || !is_array($raw) || empty($raw['id'])) {
-                return null;
-            }
+        $fetcher = function () use ($id) {
+            try {
+                $raw = $this->client->get("/customers/{$id}");
+                if (empty($raw) || !is_array($raw) || empty($raw['id'])) {
+                    return null;
+                }
 
-            return CustomerNormalizer::normalize($raw, $this->storeId);
-        } catch (WooCommerceApiException $e) {
-            if ($e->getHttpStatus() === 404) {
-                return null;
+                return CustomerNormalizer::normalize($raw, $this->storeId);
+            } catch (WooCommerceApiException $e) {
+                if ($e->getHttpStatus() === 404) {
+                    return null;
+                }
+                throw $e;
             }
-            throw $e;
+        };
+
+        if ($this->storeId > 0) {
+            return Cache::storeRemember($this->storeId, 'customer', (string)$id, Cache::TTL_CUSTOMERS, $fetcher);
         }
+
+        return $fetcher();
     }
 
     /**

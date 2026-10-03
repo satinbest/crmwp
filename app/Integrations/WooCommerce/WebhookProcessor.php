@@ -39,6 +39,9 @@ class WebhookProcessor
         try {
             $details = [];
 
+            // Automatic Store-Aware Cache Invalidation for incoming webhook events
+            Cache::handleWebhookInvalidation($storeId, $event);
+
             if (str_starts_with($event, 'order.')) {
                 $details = $this->orderHandler->handle($storeId, $event, $payload);
             } elseif (str_starts_with($event, 'product.')) {
@@ -49,11 +52,11 @@ class WebhookProcessor
                 $details = $this->couponHandler->handle($storeId, $event, $payload);
             } elseif (str_starts_with($event, 'action.')) {
                 // Generic action webhook: flush dashboard and related caches
-                Cache::forgetByPrefix("dashboard_{$storeId}");
+                Cache::forgetStore($storeId);
                 $details = ['action' => $event, 'cleared_dashboard_cache' => true];
             } else {
-                // Unknown event: still acknowledge, invalidate dashboard cache
-                Cache::forgetByPrefix("dashboard_{$storeId}");
+                // Unknown event: still acknowledge, invalidate store cache
+                Cache::forgetStore($storeId);
                 $details = ['unrecognized_event' => $event];
             }
 

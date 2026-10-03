@@ -152,7 +152,7 @@
         >
           <div class="flex items-center justify-between mb-2">
             <span class="font-bold text-sm text-slate-900 dark:text-white">{{ role.display_name }}</span>
-            <span class="text-xs font-mono dir-ltr text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded">
+            <span class="text-xs dir-ltr text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded">
               {{ role.name }}
             </span>
           </div>
@@ -168,7 +168,7 @@
       <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-6 shadow-sm">
         <div class="mb-5">
           <h3 class="text-sm font-bold text-slate-900 dark:text-white">ماتریس مجوزهای ریزدانه سامانه‌ای (Permissions)</h3>
-          <p class="text-xs text-slate-400 mt-1">کلیه ۲۲ مجوز تعریف شده در مستند مشخصات، دسته‌بندی شده بر اساس ماژول</p>
+          <p class="text-xs text-slate-400 mt-1">کلیه مجوزهای دسترسی تفکیک شده بر اساس ماژول‌های سامانه</p>
         </div>
 
         <div class="space-y-6">
@@ -184,7 +184,7 @@
                 class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/40 text-xs"
               >
                 <div class="font-bold text-slate-800 dark:text-slate-200">{{ p.display_name }}</div>
-                <div class="font-mono dir-ltr text-right text-[10px] text-slate-400 mt-0.5">{{ p.name }}</div>
+                <div class="dir-ltr text-right text-[10px] text-slate-400 mt-0.5">{{ p.name }}</div>
                 <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{{ p.description }}</div>
               </div>
             </div>
@@ -224,9 +224,7 @@
               v-for="s in allStores"
               :key="s.id"
               class="flex items-center justify-between p-3 rounded-xl border transition-colors cursor-pointer"
-              :class="userStoreIds.includes(s.id)
-                ? 'bg-indigo-50/60 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800'
-                : 'hover:bg-slate-50 dark:hover:bg-slate-800/40 border-slate-200/70 dark:border-slate-800'"
+              :class="userStoreIds.includes(s.id) ? 'bg-indigo-50/60 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40 border-slate-200/70 dark:border-slate-800'"
             >
               <div class="flex items-center gap-3">
                 <input
@@ -237,7 +235,7 @@
                 />
                 <div>
                   <div class="font-bold text-xs text-slate-800 dark:text-slate-200">{{ s.name }}</div>
-                  <div class="text-[10px] text-slate-400 font-mono dir-ltr text-right">{{ s.currency }} • {{ s.url }}</div>
+                  <div class="text-[10px] text-slate-400 dir-ltr text-right">{{ s.currency }} • {{ s.url }}</div>
                 </div>
               </div>
               <span

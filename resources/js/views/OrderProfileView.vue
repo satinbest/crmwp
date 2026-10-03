@@ -259,7 +259,7 @@
                     </span>
                   </div>
                 </td>
-                <td class="py-3.5 px-4 font-mono text-slate-500 dir-ltr text-right">
+                <td class="py-3.5 px-4 text-slate-500 dir-ltr text-right">
                   {{ item.sku || '—' }}
                 </td>
                 <td class="py-3.5 px-4 text-slate-700 dark:text-slate-300">
@@ -287,9 +287,7 @@
           :key="tab.id"
           @click="activeTab = tab.id"
           class="flex items-center gap-2 px-4 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all shrink-0 -mb-px"
-          :class="activeTab === tab.id
-            ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 font-black'
-            : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
+          :class="activeTab === tab.id ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 font-black' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
         >
           <Iconsax :name="tab.icon" size="17" />
           <span>{{ tab.label }}</span>

@@ -1,7 +1,12 @@
 # Environment & Secrets
 .env
 .env.local
+.env.production
+.env.development
 .env.*.local
+*.local
+credentials*
+secrets*
 cookie.txt
 *.cookie
 

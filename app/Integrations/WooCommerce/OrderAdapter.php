@@ -3,6 +3,7 @@
 namespace App\Integrations\WooCommerce;
 
 use App\Models\Store;
+use App\Support\Cache;
 use App\Support\Logger;
 use Exception;
 
@@ -95,24 +96,32 @@ class OrderAdapter
             $wcParams['order'] = in_array($dir, ['asc', 'desc'], true) ? $dir : 'desc';
         }
 
-        $response = $this->client->getWithHeaders('/orders', $wcParams);
-        $rawList = is_array($response['data']) ? $response['data'] : [];
-        $headers = $response['headers'] ?? [];
+        $fetcher = function () use ($wcParams, $page, $perPage) {
+            $response = $this->client->getWithHeaders('/orders', $wcParams);
+            $rawList = is_array($response['data']) ? $response['data'] : [];
+            $headers = $response['headers'] ?? [];
 
-        $total = isset($headers['x-wp-total']) ? (int)$headers['x-wp-total'] : count($rawList);
-        $totalPages = isset($headers['x-wp-totalpages']) ? (int)$headers['x-wp-totalpages'] : (int)ceil($total / $perPage);
+            $total = isset($headers['x-wp-total']) ? (int)$headers['x-wp-total'] : count($rawList);
+            $totalPages = isset($headers['x-wp-totalpages']) ? (int)$headers['x-wp-totalpages'] : (int)ceil($total / $perPage);
 
-        $normalized = OrderNormalizer::normalizeCollection($rawList, $this->storeId);
+            $normalized = OrderNormalizer::normalizeCollection($rawList, $this->storeId);
 
-        return [
-            'data' => $normalized,
-            'meta' => [
-                'current_page' => $page,
-                'per_page' => $perPage,
-                'total' => $total,
-                'total_pages' => $totalPages,
-            ],
-        ];
+            return [
+                'data' => $normalized,
+                'meta' => [
+                    'current_page' => $page,
+                    'per_page' => $perPage,
+                    'total' => $total,
+                    'total_pages' => $totalPages,
+                ],
+            ];
+        };
+
+        if ($this->storeId > 0) {
+            return Cache::storeRememberQuery($this->storeId, 'orders', $wcParams, Cache::TTL_ORDERS, $fetcher);
+        }
+
+        return $fetcher();
     }
 
     /**
@@ -125,19 +134,27 @@ class OrderAdapter
             return $raw ? OrderNormalizer::normalize($raw, $this->storeId) : null;
         }
 
-        try {
-            $raw = $this->client->get("/orders/{$orderId}");
-            if (empty($raw) || !is_array($raw) || empty($raw['id'])) {
-                return null;
-            }
+        $fetcher = function () use ($orderId) {
+            try {
+                $raw = $this->client->get("/orders/{$orderId}");
+                if (empty($raw) || !is_array($raw) || empty($raw['id'])) {
+                    return null;
+                }
 
-            return OrderNormalizer::normalize($raw, $this->storeId);
-        } catch (WooCommerceApiException $e) {
-            if ($e->getHttpStatus() === 404) {
-                return null;
+                return OrderNormalizer::normalize($raw, $this->storeId);
+            } catch (WooCommerceApiException $e) {
+                if ($e->getHttpStatus() === 404) {
+                    return null;
+                }
+                throw $e;
             }
-            throw $e;
+        };
+
+        if ($this->storeId > 0) {
+            return Cache::storeRemember($this->storeId, 'order', (string)$orderId, Cache::TTL_ORDERS, $fetcher);
         }
+
+        return $fetcher();
     }
 
     /**
@@ -145,6 +162,14 @@ class OrderAdapter
      */
     public function updateStatus(int $orderId, string $status): array
     {
+        if ($this->storeId > 0) {
+            Cache::forgetStoreResource($this->storeId, 'orders');
+            Cache::forgetStoreResource($this->storeId, 'dashboard');
+            Cache::forgetStoreResource($this->storeId, 'reports');
+            Cache::forgetStoreResource($this->storeId, 'crm_summary');
+            Cache::forget(Cache::storeKey($this->storeId, 'order', (string)$orderId));
+        }
+
         if ($this->demoAdapter !== null) {
             return $this->demoAdapter->updateOrderStatus($orderId, $status);
         }
@@ -161,6 +186,14 @@ class OrderAdapter
      */
     public function updateOrder(int $orderId, array $data): array
     {
+        if ($this->storeId > 0) {
+            Cache::forgetStoreResource($this->storeId, 'orders');
+            Cache::forgetStoreResource($this->storeId, 'dashboard');
+            Cache::forgetStoreResource($this->storeId, 'reports');
+            Cache::forgetStoreResource($this->storeId, 'crm_summary');
+            Cache::forget(Cache::storeKey($this->storeId, 'order', (string)$orderId));
+        }
+
         if ($this->demoAdapter !== null) {
             return $this->demoAdapter->updateOrderStatus($orderId, $data['status'] ?? 'processing');
         }

@@ -3,6 +3,7 @@
 namespace App\Integrations\WooCommerce;
 
 use App\Models\Store;
+use App\Support\Cache;
 use Exception;
 
 class ProductAdapter
@@ -68,8 +69,24 @@ class ProductAdapter
             $query['stock_status'] = $params['stock_status'];
         }
 
+        if (!empty($params['sku'])) {
+            $query['sku'] = trim((string)$params['sku']);
+        }
+
+        if (!empty($params['include'])) {
+            if (is_array($params['include'])) {
+                $query['include'] = implode(',', array_filter(array_map('intval', $params['include'])));
+            } else {
+                $query['include'] = trim((string)$params['include']);
+            }
+        }
+
         if (!empty($params['category']) && $params['category'] !== 'all') {
-            $query['category'] = (int)$params['category'];
+            if (is_array($params['category'])) {
+                $query['category'] = implode(',', array_filter(array_map('intval', $params['category'])));
+            } else {
+                $query['category'] = (int)$params['category'];
+            }
         }
 
         if (!empty($params['tag']) && $params['tag'] !== 'all') {
@@ -96,23 +113,31 @@ class ProductAdapter
             $query['order'] = strtolower($params['direction']) === 'asc' ? 'asc' : 'desc';
         }
 
-        $rawResponse = $this->client->getWithHeaders('/products', $query);
+        $fetcher = function () use ($query) {
+            $rawResponse = $this->client->getWithHeaders('/products', $query);
 
-        $headers = $rawResponse['headers'] ?? [];
-        $rawProducts = is_array($rawResponse['data'] ?? null) ? $rawResponse['data'] : [];
+            $headers = $rawResponse['headers'] ?? [];
+            $rawProducts = is_array($rawResponse['data'] ?? null) ? $rawResponse['data'] : [];
 
-        $total = isset($headers['x-wp-total']) ? (int)$headers['x-wp-total'] : count($rawProducts);
-        $totalPages = isset($headers['x-wp-totalpages']) ? (int)$headers['x-wp-totalpages'] : (int)ceil(max(1, $total) / $query['per_page']);
+            $total = isset($headers['x-wp-total']) ? (int)$headers['x-wp-total'] : count($rawProducts);
+            $totalPages = isset($headers['x-wp-totalpages']) ? (int)$headers['x-wp-totalpages'] : (int)ceil(max(1, $total) / $query['per_page']);
 
-        return [
-            'data' => ProductNormalizer::normalizeCollection($rawProducts, $this->storeId),
-            'meta' => [
-                'page' => $query['page'],
-                'per_page' => $query['per_page'],
-                'total' => $total,
-                'total_pages' => max(1, $totalPages),
-            ],
-        ];
+            return [
+                'data' => ProductNormalizer::normalizeCollection($rawProducts, $this->storeId),
+                'meta' => [
+                    'page' => $query['page'],
+                    'per_page' => $query['per_page'],
+                    'total' => $total,
+                    'total_pages' => max(1, $totalPages),
+                ],
+            ];
+        };
+
+        if ($this->storeId > 0) {
+            return Cache::storeRememberQuery($this->storeId, 'products', $query, Cache::TTL_PRODUCTS, $fetcher);
+        }
+
+        return $fetcher();
     }
 
     /**
@@ -125,18 +150,26 @@ class ProductAdapter
             return $raw ? ProductNormalizer::normalize($raw, $this->storeId) : null;
         }
 
-        try {
-            $raw = $this->client->get("/products/{$id}");
-            if (!is_array($raw) || empty($raw['id'])) {
-                return null;
+        $fetcher = function () use ($id) {
+            try {
+                $raw = $this->client->get("/products/{$id}");
+                if (!is_array($raw) || empty($raw['id'])) {
+                    return null;
+                }
+                return ProductNormalizer::normalize($raw, $this->storeId);
+            } catch (WooCommerceApiException $e) {
+                if ($e->getHttpStatus() === 404) {
+                    return null;
+                }
+                throw $e;
             }
-            return ProductNormalizer::normalize($raw, $this->storeId);
-        } catch (WooCommerceApiException $e) {
-            if ($e->getHttpStatus() === 404) {
-                return null;
-            }
-            throw $e;
+        };
+
+        if ($this->storeId > 0) {
+            return Cache::storeRemember($this->storeId, 'product', (string)$id, Cache::TTL_PRODUCT_ITEM, $fetcher);
         }
+
+        return $fetcher();
     }
 
     /**
@@ -144,6 +177,11 @@ class ProductAdapter
      */
     public function createProduct(array $data): array
     {
+        if ($this->storeId > 0) {
+            Cache::forgetStoreResource($this->storeId, 'products');
+            Cache::forgetStoreResource($this->storeId, 'inventory');
+        }
+
         if ($this->demoAdapter !== null) {
             return $this->demoAdapter->createProduct($data);
         }
@@ -157,6 +195,12 @@ class ProductAdapter
      */
     public function updateProduct(int $id, array $data): array
     {
+        if ($this->storeId > 0) {
+            Cache::forgetStoreResource($this->storeId, 'products');
+            Cache::forgetStoreResource($this->storeId, 'inventory');
+            Cache::forget(Cache::storeKey($this->storeId, 'product', (string)$id));
+        }
+
         if ($this->demoAdapter !== null) {
             return $this->demoAdapter->updateProduct($id, $data);
         }
@@ -170,6 +214,12 @@ class ProductAdapter
      */
     public function deleteProduct(int $id, bool $force = false): array
     {
+        if ($this->storeId > 0) {
+            Cache::forgetStoreResource($this->storeId, 'products');
+            Cache::forgetStoreResource($this->storeId, 'inventory');
+            Cache::forget(Cache::storeKey($this->storeId, 'product', (string)$id));
+        }
+
         if ($this->demoAdapter !== null) {
             return $this->demoAdapter->deleteProduct($id, $force);
         }
@@ -293,8 +343,16 @@ class ProductAdapter
             $query['search'] = trim((string)$params['search']);
         }
 
-        $raw = $this->client->get('/products/categories', $query);
-        return is_array($raw) ? $raw : [];
+        $fetcher = function () use ($query) {
+            $raw = $this->client->get('/products/categories', $query);
+            return is_array($raw) ? $raw : [];
+        };
+
+        if ($this->storeId > 0) {
+            return Cache::storeRememberQuery($this->storeId, 'categories', $query, Cache::TTL_CATEGORIES, $fetcher);
+        }
+
+        return $fetcher();
     }
 
     /**
@@ -315,8 +373,16 @@ class ProductAdapter
             $query['search'] = trim((string)$params['search']);
         }
 
-        $raw = $this->client->get('/products/tags', $query);
-        return is_array($raw) ? $raw : [];
+        $fetcher = function () use ($query) {
+            $raw = $this->client->get('/products/tags', $query);
+            return is_array($raw) ? $raw : [];
+        };
+
+        if ($this->storeId > 0) {
+            return Cache::storeRememberQuery($this->storeId, 'tags', $query, Cache::TTL_CATEGORIES, $fetcher);
+        }
+
+        return $fetcher();
     }
 
     /**
@@ -328,8 +394,16 @@ class ProductAdapter
             return $this->demoAdapter->getAttributes();
         }
 
-        $raw = $this->client->get('/products/attributes');
-        return is_array($raw) ? $raw : [];
+        $fetcher = function () {
+            $raw = $this->client->get('/products/attributes');
+            return is_array($raw) ? $raw : [];
+        };
+
+        if ($this->storeId > 0) {
+            return Cache::storeRemember($this->storeId, 'attributes', 'all', Cache::TTL_ATTRIBUTES, $fetcher);
+        }
+
+        return $fetcher();
     }
 
     public function listCategories(array $params = []): array
@@ -352,6 +426,11 @@ class ProductAdapter
      */
     public function batch(array $data): array
     {
+        if ($this->storeId > 0) {
+            Cache::forgetStoreResource($this->storeId, 'products');
+            Cache::forgetStoreResource($this->storeId, 'inventory');
+        }
+
         if ($this->demoAdapter !== null) {
             $updated = [];
             foreach ($data['update'] ?? [] as $item) {
@@ -373,6 +452,12 @@ class ProductAdapter
      */
     public function batchVariations(int $productId, array $data): array
     {
+        if ($this->storeId > 0) {
+            Cache::forgetStoreResource($this->storeId, 'products');
+            Cache::forgetStoreResource($this->storeId, 'inventory');
+            Cache::forget(Cache::storeKey($this->storeId, 'product', (string)$productId));
+        }
+
         if ($this->demoAdapter !== null) {
             $updated = [];
             foreach ($data['update'] ?? [] as $item) {

@@ -20,14 +20,14 @@ class DatabaseSeeder
         $this->seedPermissions();
         $this->seedRoles();
         $this->seedRolePermissions();
+        $this->seedUsers();
 
         $isProduction = \App\Support\Env::get('APP_ENV', 'production') === 'production';
         if ($seedDemo === false || ($seedDemo === null && $isProduction)) {
-            // Production clean seed: only RBAC roles & permissions, no fake demo stores/users
+            // Production clean seed: only RBAC roles, permissions & initial users; no fake demo stores
             return;
         }
 
-        $this->seedUsers();
         $this->seedStores();
         $this->seedUserStores();
         $this->seedStoreCrmData();

@@ -186,6 +186,16 @@ const routes = [
         component: () => import('@/views/settings/WebhooksManagementView.vue'),
         meta: { permission: 'webhooks.view' },
       },
+      {
+        path: 'settings/cache',
+        name: 'settings-cache',
+        component: () => import('@/views/settings/ObjectCacheView.vue'),
+      },
+      {
+        path: 'settings/about',
+        name: 'settings-about',
+        component: () => import('@/views/settings/AboutView.vue'),
+      },
     ],
   },
   {

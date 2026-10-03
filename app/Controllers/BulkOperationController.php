@@ -91,6 +91,36 @@ class BulkOperationController extends BaseController
     }
 
     /**
+     * POST /api/v1/bulk-operations/evaluate-target
+     */
+    public function evaluateTarget(Request $request): Response
+    {
+        try {
+            $user = $request->getUser();
+            if (!$user) {
+                return $this->error('UNAUTHENTICATED', 'احراز هویت الزامی است.', [], 401);
+            }
+
+            $storeId = $this->resolveStoreContext($request);
+            $entity = $request->input('entity') ?? $request->input('target_entity') ?? 'products';
+
+            $this->authorizeBulk($user->id, 'bulk.view', $entity);
+
+            $data = $request->all();
+            $data['store_id'] = $storeId;
+
+            $result = $this->engine->evaluateTarget($storeId, $user->id, $data);
+
+            return $this->success($result);
+        } catch (InvalidArgumentException $e) {
+            return $this->error('VALIDATION_ERROR', $e->getMessage(), [], 422);
+        } catch (Exception $e) {
+            $code = $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500;
+            return $this->error('TARGET_EVALUATE_ERROR', $e->getMessage(), [], $code);
+        }
+    }
+
+    /**
      * POST /api/v1/bulk-operations
      * Create and execute bulk operation.
      */
@@ -122,6 +152,11 @@ class BulkOperationController extends BaseController
             }
             $opId = (int)$operation['id'];
 
+            // If request requests step-by-step or async creation
+            if ($request->input('async') || $request->input('create_only')) {
+                return $this->success($operation, [], 201);
+            }
+
             // 2. Execute operation immediately (synchronous batch execution)
             $completedOp = $this->engine->executeOperation($opId);
 
@@ -148,6 +183,187 @@ class BulkOperationController extends BaseController
         } catch (Exception $e) {
             $code = $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500;
             return $this->error('BULK_EXECUTION_ERROR', $e->getMessage(), [], $code);
+        }
+    }
+
+    /**
+     * POST /api/v1/bulk-operations/{id}/chunk
+     * Execute a single chunk/batch of an operation for real-time progress.
+     */
+    public function chunk(Request $request, array $params = []): Response
+    {
+        try {
+            $user = $request->getUser();
+            if (!$user) {
+                return $this->error('UNAUTHENTICATED', 'احراز هویت الزامی است.', [], 401);
+            }
+
+            $storeId = $this->resolveStoreContext($request);
+            $id = (int)($request->param('id') ?? $params['id'] ?? $request->query('id') ?? 0);
+
+            if ($id <= 0) {
+                return $this->error('VALIDATION_ERROR', 'شناسه عملیات نامعتبر است.', [], 400);
+            }
+
+            $op = $this->engine->getOperation($id, $storeId);
+            if (!$op) {
+                return $this->error('NOT_FOUND', "عملیات گروهی با شناسه {$id} در این فروشگاه یافت نشد.", [], 404);
+            }
+
+            $this->authorizeBulk($user->id, 'bulk.execute', $op['entity_type'] ?? 'products');
+
+            $chunkSize = max(5, min(100, (int)($request->input('chunk_size') ?? 25)));
+            $updatedOp = $this->engine->executeChunk($id, $chunkSize);
+
+            // If finished, send notification
+            if (!empty($updatedOp['is_done'])) {
+                try {
+                    $notifService = new \App\Services\NotificationService();
+                    $notifService->notifyBulkOperationFinished(
+                        (int)$user->id,
+                        $id,
+                        $updatedOp['action_type'] ?? ($updatedOp['type'] ?? 'عملیات گروهی'),
+                        $updatedOp['status'] ?? 'completed',
+                        (int)($updatedOp['total_items'] ?? 0),
+                        (int)($updatedOp['processed_items'] ?? 0),
+                        (int)($updatedOp['failed_items'] ?? 0),
+                        $storeId
+                    );
+                } catch (\Throwable $te) {
+                    // Non-blocking
+                }
+            }
+
+            return $this->success($updatedOp);
+        } catch (InvalidArgumentException $e) {
+            return $this->error('BAD_REQUEST', $e->getMessage(), [], 400);
+        } catch (Exception $e) {
+            $code = $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500;
+            return $this->error('BULK_CHUNK_ERROR', $e->getMessage(), [], $code);
+        }
+    }
+
+    /**
+     * POST /api/v1/bulk-operations/{id}/retry-failed
+     */
+    public function retryFailed(Request $request, array $params = []): Response
+    {
+        try {
+            $user = $request->getUser();
+            if (!$user) {
+                return $this->error('UNAUTHENTICATED', 'احراز هویت الزامی است.', [], 401);
+            }
+
+            $storeId = $this->resolveStoreContext($request);
+            $id = (int)($request->param('id') ?? $params['id'] ?? $request->query('id') ?? 0);
+
+            if ($id <= 0) {
+                return $this->error('VALIDATION_ERROR', 'شناسه عملیات نامعتبر است.', [], 400);
+            }
+
+            $op = $this->engine->getOperation($id, $storeId);
+            if (!$op) {
+                return $this->error('NOT_FOUND', "عملیات گروهی با شناسه {$id} در این فروشگاه یافت نشد.", [], 404);
+            }
+
+            $this->authorizeBulk($user->id, 'bulk.execute', $op['entity_type'] ?? 'products');
+
+            $newOp = $this->engine->retryFailedItems($id, $user->id);
+
+            return $this->success($newOp, ['message' => 'عملیات تلاش مجدد برای آیتم‌های ناموفق با موفقیت ایجاد شد.'], 201);
+        } catch (InvalidArgumentException $e) {
+            return $this->error('BAD_REQUEST', $e->getMessage(), [], 400);
+        } catch (Exception $e) {
+            $code = $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500;
+            return $this->error('BULK_RETRY_ERROR', $e->getMessage(), [], $code);
+        }
+    }
+
+    /**
+     * GET /api/v1/bulk-operations/presets
+     */
+    public function presets(Request $request): Response
+    {
+        try {
+            $user = $request->getUser();
+            if (!$user) {
+                return $this->error('UNAUTHENTICATED', 'احراز هویت الزامی است.', [], 401);
+            }
+
+            if (!$this->rbacService->userHasPermission($user->id, 'bulk.view')) {
+                return $this->error('FORBIDDEN', 'شما مجوز مشاهده الگوها را ندارید.', [], 403);
+            }
+
+            $storeId = $this->resolveStoreContext($request);
+            $list = $this->engine->listPresets($storeId);
+
+            return $this->success($list);
+        } catch (Exception $e) {
+            $code = $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500;
+            return $this->error('PRESETS_LIST_ERROR', $e->getMessage(), [], $code);
+        }
+    }
+
+    /**
+     * POST /api/v1/bulk-operations/presets
+     */
+    public function createPreset(Request $request): Response
+    {
+        try {
+            $user = $request->getUser();
+            if (!$user) {
+                return $this->error('UNAUTHENTICATED', 'احراز هویت الزامی است.', [], 401);
+            }
+
+            if (!$this->rbacService->userHasPermission($user->id, 'bulk.execute')) {
+                return $this->error('FORBIDDEN', 'شما مجوز ایجاد الگوهای عملیات گروهی را ندارید.', [], 403);
+            }
+
+            $storeId = $this->resolveStoreContext($request);
+            $data = $request->all();
+
+            $preset = $this->engine->createPreset($storeId, $user->id, $data);
+
+            return $this->success($preset, ['message' => 'الگوی عملیات با موفقیت ذخیره گردید.'], 201);
+        } catch (InvalidArgumentException $e) {
+            return $this->error('VALIDATION_ERROR', $e->getMessage(), [], 422);
+        } catch (Exception $e) {
+            $code = $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500;
+            return $this->error('PRESET_CREATE_ERROR', $e->getMessage(), [], $code);
+        }
+    }
+
+    /**
+     * DELETE /api/v1/bulk-operations/presets/{id}
+     */
+    public function deletePreset(Request $request, array $params = []): Response
+    {
+        try {
+            $user = $request->getUser();
+            if (!$user) {
+                return $this->error('UNAUTHENTICATED', 'احراز هویت الزامی است.', [], 401);
+            }
+
+            if (!$this->rbacService->userHasPermission($user->id, 'bulk.execute')) {
+                return $this->error('FORBIDDEN', 'شما مجوز حذف الگوهای عملیات گروهی را ندارید.', [], 403);
+            }
+
+            $storeId = $this->resolveStoreContext($request);
+            $id = (int)($request->param('id') ?? $params['id'] ?? $request->query('id') ?? 0);
+
+            if ($id <= 0) {
+                return $this->error('VALIDATION_ERROR', 'شناسه الگو نامعتبر است.', [], 400);
+            }
+
+            $deleted = $this->engine->deletePreset($id, $storeId);
+            if (!$deleted) {
+                return $this->error('NOT_FOUND', 'الگوی مورد نظر یافت نشد.', [], 404);
+            }
+
+            return $this->success(['deleted' => true], ['message' => 'الگو با موفقیت حذف شد.']);
+        } catch (Exception $e) {
+            $code = $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500;
+            return $this->error('PRESET_DELETE_ERROR', $e->getMessage(), [], $code);
         }
     }
 

@@ -210,8 +210,8 @@
 
               <!-- Event & Topic -->
               <td class="p-4">
-                <div class="font-bold text-slate-900 dark:text-white font-mono dir-ltr text-right">{{ log.event }}</div>
-                <div class="text-[10px] text-slate-400 font-mono dir-ltr text-right">{{ log.topic }}</div>
+                <div class="font-bold text-slate-900 dark:text-white dir-ltr text-right">{{ log.event }}</div>
+                <div class="text-[10px] text-slate-400 dir-ltr text-right">{{ log.topic }}</div>
               </td>
 
               <!-- Resource ID -->
@@ -223,7 +223,7 @@
               </td>
 
               <!-- Delivery ID -->
-              <td class="p-4 font-mono text-slate-500 dir-ltr text-right">
+              <td class="p-4 text-slate-500 dir-ltr text-right">
                 <span v-if="log.delivery_id" :title="log.delivery_id" class="truncate block max-w-[150px]">
                   {{ log.delivery_id }}
                 </span>
@@ -320,7 +320,7 @@
             </span>
             <div>
               <h3 class="font-bold text-sm text-slate-900 dark:text-white">جزئیات وب‌هوک #{{ toPersianDigits(activeLog.id) }}</h3>
-              <p class="text-[11px] text-slate-400 font-mono dir-ltr text-right">{{ activeLog.event }} | {{ activeLog.topic }}</p>
+              <p class="text-[11px] text-slate-400 dir-ltr text-right">{{ activeLog.event }} | {{ activeLog.topic }}</p>
             </div>
           </div>
           <button @click="activeLog = null" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
@@ -364,11 +364,11 @@
               <Iconsax name="warning-2" size="16" />
               <span>پیام خطا:</span>
             </div>
-            <div class="text-[11px] font-mono leading-relaxed">{{ activeLog.error_message }}</div>
+            <div class="text-[11px] leading-relaxed">{{ activeLog.error_message }}</div>
           </div>
 
           <!-- Delivery ID & IP -->
-          <div class="space-y-1 text-slate-500 font-mono text-[11px] p-3 rounded-xl bg-slate-100/60 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/60">
+          <div class="space-y-1 text-slate-500 text-[11px] p-3 rounded-xl bg-slate-100/60 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/60">
             <div><span class="text-slate-400">Delivery ID: </span>{{ activeLog.delivery_id || '—' }}</div>
             <div><span class="text-slate-400">IP Address: </span>{{ activeLog.ip_address || '—' }}</div>
             <div><span class="text-slate-400">Created At: </span>{{ activeLog.created_at }}</div>
@@ -386,7 +386,7 @@
                 کپی داده‌ها
               </button>
             </div>
-            <pre class="p-3.5 rounded-2xl bg-slate-950 text-emerald-400 font-mono text-[11px] overflow-x-auto max-h-60 dir-ltr text-left border border-slate-800">{{ JSON.stringify(activeLog.payload, null, 2) }}</pre>
+            <pre class="p-3.5 rounded-2xl bg-slate-950 text-emerald-400 text-[11px] overflow-x-auto max-h-60 dir-ltr text-left border border-slate-800">{{ JSON.stringify(activeLog.payload, null, 2) }}</pre>
           </div>
         </div>
 
@@ -485,7 +485,7 @@ const onStoreChange = () => {
 const loadStores = async () => {
   try {
     const res = await axios.get('/stores');
-    stores.value = res.data.data || [];
+    stores.value = Array.isArray(res.data) ? res.data : (res.data?.data || res.data || []);
     if (!selectedStoreId.value && stores.value.length > 0) {
       selectedStoreId.value = stores.value[0].id;
     }
@@ -507,8 +507,8 @@ const loadLogs = async () => {
     }
 
     const res = await axios.get('/webhooks', { params });
-    logs.value = res.data.data || [];
-    meta.value = res.data.meta || null;
+    logs.value = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+    meta.value = res.meta || res.data?.meta || null;
   } catch (e) {
     console.error('Error loading webhooks:', e);
   } finally {
@@ -523,7 +523,7 @@ const loadHealth = async () => {
   }
   try {
     const res = await axios.get(`/stores/${selectedStoreId.value}/webhook-health`);
-    health.value = res.data.data || null;
+    health.value = res.data?.data || res.data || null;
   } catch (e) {
     console.error('Error loading health:', e);
   }

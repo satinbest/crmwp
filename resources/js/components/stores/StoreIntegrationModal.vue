@@ -20,7 +20,7 @@
                 {{ store.status === 'active' ? 'متصل' : 'قطع ارتباط' }}
               </span>
             </h3>
-            <p class="text-xs text-slate-400 font-mono mt-0.5">{{ store.url }}</p>
+            <p class="text-xs text-slate-400 mt-0.5">{{ store.url }}</p>
           </div>
         </div>
 
@@ -282,7 +282,7 @@
               </thead>
               <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                 <tr v-for="wh in remoteWebhooks" :key="wh.id" class="hover:bg-slate-50/50">
-                  <td class="p-3 font-mono font-bold text-indigo-600">{{ wh.topic }}</td>
+                  <td class="p-3 font-bold text-indigo-600">{{ wh.topic }}</td>
                   <td class="p-3 text-slate-700 dark:text-slate-300 font-semibold">{{ wh.name }}</td>
                   <td class="p-3">
                     <span
@@ -292,7 +292,7 @@
                       {{ wh.status }}
                     </span>
                   </td>
-                  <td class="p-3 font-mono text-[10px] text-slate-400 max-w-[180px] truncate dir-ltr text-right" :title="wh.delivery_url">
+                  <td class="p-3 text-[10px] text-slate-400 max-w-[180px] truncate dir-ltr text-right" :title="wh.delivery_url">
                     {{ wh.delivery_url }}
                   </td>
                   <td class="p-3" :class="wh.failure_count > 0 ? 'text-rose-600 font-bold' : 'text-slate-400'">
@@ -346,7 +346,7 @@
               </thead>
               <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                 <tr v-for="l in storeLogs" :key="l.id" class="hover:bg-slate-50/50">
-                  <td class="p-3 font-mono font-bold text-slate-800 dark:text-slate-200">{{ l.event }}</td>
+                  <td class="p-3 font-bold text-slate-800 dark:text-slate-200">{{ l.event }}</td>
                   <td class="p-3">
                     <span
                       class="px-2 py-0.5 rounded-full text-[10px] font-bold"
@@ -428,7 +428,7 @@ const loadHealth = async () => {
   loadingHealth.value = true;
   try {
     const res = await axios.get(`/stores/${props.store.id}/webhook-health`);
-    health.value = res.data.data;
+    health.value = res.data?.data || res.data;
   } catch (e) {
     console.error(e);
   } finally {
@@ -441,10 +441,10 @@ const startReconciliation = async () => {
   reconciling.value = true;
   try {
     const res = await axios.post(`/stores/${props.store.id}/reconcile`, reconcileForm.value);
-    lastReconcileResult.value = res.data.data;
+    lastReconcileResult.value = res.data?.data || res.data;
     await Promise.all([loadHealth(), loadSyncLogs()]);
   } catch (e) {
-    alert(e.response?.data?.message || 'خطا در اجرای فرآیند تطبیق');
+    alert(e.message || e.response?.data?.message || 'خطا در اجرای فرآیند تطبیق');
   } finally {
     reconciling.value = false;
   }
@@ -455,7 +455,7 @@ const loadSyncLogs = async () => {
   loadingSyncLogs.value = true;
   try {
     const res = await axios.get(`/stores/${props.store.id}/sync-logs?per_page=10`);
-    syncLogs.value = res.data.data || [];
+    syncLogs.value = Array.isArray(res.data) ? res.data : (res.data?.data || []);
   } catch (e) {
     console.error(e);
   } finally {
@@ -468,7 +468,7 @@ const loadRemoteWebhooks = async () => {
   loadingWebhooks.value = true;
   try {
     const res = await axios.get(`/stores/${props.store.id}/webhooks`);
-    remoteWebhooks.value = res.data.data || [];
+    remoteWebhooks.value = Array.isArray(res.data) ? res.data : (res.data?.data || []);
   } catch (e) {
     console.error(e);
   } finally {
@@ -481,10 +481,11 @@ const autoSetupWebhooks = async () => {
   settingUp.value = true;
   try {
     const res = await axios.post(`/stores/${props.store.id}/webhooks/auto-setup`);
-    alert(`${res.data.data.created_count} وب‌هوک استاندارد با موفقیت روی فروشگاه ثبت شد.`);
+    const count = res.data?.created_count ?? res.data?.data?.created_count ?? 0;
+    alert(`${count} وب‌هوک استاندارد با موفقیت روی فروشگاه ثبت شد.`);
     await loadRemoteWebhooks();
   } catch (e) {
-    alert(e.response?.data?.message || 'خطا در ثبت خودکار وب‌هوک‌ها');
+    alert(e.message || e.response?.data?.message || 'خطا در ثبت خودکار وب‌هوک‌ها');
   } finally {
     settingUp.value = false;
   }
@@ -496,7 +497,7 @@ const deleteRemoteWebhook = async (webhookId) => {
     await axios.delete(`/stores/${props.store.id}/webhooks/${webhookId}`);
     await loadRemoteWebhooks();
   } catch (e) {
-    alert(e.response?.data?.message || 'خطا در حذف وب‌هوک');
+    alert(e.message || e.response?.data?.message || 'خطا در حذف وب‌هوک');
   }
 };
 
@@ -505,7 +506,7 @@ const loadStoreLogs = async () => {
   loadingStoreLogs.value = true;
   try {
     const res = await axios.get(`/webhooks?store_id=${props.store.id}&per_page=15`);
-    storeLogs.value = res.data.data || [];
+    storeLogs.value = Array.isArray(res.data) ? res.data : (res.data?.data || []);
   } catch (e) {
     console.error(e);
   } finally {

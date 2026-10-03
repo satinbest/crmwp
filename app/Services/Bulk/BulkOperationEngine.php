@@ -99,7 +99,15 @@ class BulkOperationEngine
             'entity' => $handler->getEntityType(),
             'affected_count' => $finalCount,
             'parent_count' => $previewResult['parent_count'] ?? $affectedCount,
+            'simple_count' => $previewResult['simple_count'] ?? 0,
+            'variable_count' => $previewResult['variable_count'] ?? 0,
             'variation_count' => $previewResult['variation_count'] ?? 0,
+            'breakdown' => $previewResult['breakdown'] ?? [
+                'simple' => $previewResult['simple_count'] ?? 0,
+                'variable' => $previewResult['variable_count'] ?? 0,
+                'variation' => $previewResult['variation_count'] ?? 0,
+                'total' => $finalCount,
+            ],
             'target' => $actionParams['target'] ?? 'parent',
             'action' => [
                 'type' => $actionType,
@@ -460,6 +468,304 @@ class BulkOperationEngine
     }
 
     /**
+     * Execute a single chunk/step of a bulk operation.
+     * Allows real-time frontend progress reporting and cancellation without HTTP timeouts.
+     */
+    public function executeChunk(int $operationId, int $chunkSize = 25): array
+    {
+        $op = $this->getOperationByIdRaw($operationId);
+        if (!$op) {
+            throw new InvalidArgumentException("عملیات گروهی یافت نشد.");
+        }
+
+        if (in_array($op['status'], ['completed', 'cancelled', 'failed'], true)) {
+            $res = $this->getOperation($operationId, (int)$op['store_id']);
+            $res['is_done'] = true;
+            $res['chunk_results'] = [];
+            return $res;
+        }
+
+        // Set status to processing if pending
+        if ($op['status'] === 'pending') {
+            $this->pdo->prepare("
+                UPDATE bulk_operations
+                SET status = 'processing', started_at = NOW(), updated_at = NOW()
+                WHERE id = :id AND status = 'pending'
+            ")->execute(['id' => $operationId]);
+            $op['status'] = 'processing';
+        }
+
+        $storeId = (int)$op['store_id'];
+        $userId = (int)$op['user_id'];
+        $store = $this->storeRepo->findById($storeId);
+        if (!$store) {
+            $this->markOperationStatus($operationId, 'failed', ['error' => 'فروشگاه نامعتبر یا حذف شده است']);
+            return $this->getOperation($operationId, $storeId);
+        }
+
+        $targetEntity = $op['target_entity'];
+        $handler = $this->getHandler($targetEntity);
+
+        $payload = is_string($op['payload']) ? json_decode($op['payload'], true) : $op['payload'];
+        $actionData = $payload['action'] ?? [];
+        $actionType = $actionData['type'] ?? $op['type'];
+        $actionParams = $actionData['params'] ?? [];
+        $selection = $payload['selection'] ?? [];
+        $filter = $payload['filter'] ?? ($selection['filter'] ?? []);
+
+        $totalItems = (int)$op['total_items'];
+        $processedTotal = (int)($op['processed_items'] ?? 0);
+        $successTotal = (int)($op['success_items'] ?? 0);
+        $failedTotal = (int)($op['failed_items'] ?? 0);
+        $skippedTotal = (int)($op['skipped_items'] ?? 0);
+
+        // Calculate page for this chunk
+        $page = (int)floor($processedTotal / $chunkSize) + 1;
+
+        // Fetch entities for this chunk
+        $entities = $handler->resolveEntitiesBatch($store, $selection, $filter, $page, $chunkSize);
+
+        $chunkResults = [];
+        if (!empty($entities)) {
+            $batchResults = $handler->executeBatch($store, $entities, $actionType, $actionParams);
+
+            $itemInsertStmt = $this->pdo->prepare("
+                INSERT INTO bulk_operation_items (
+                    bulk_operation_id, entity_id, status, old_state, new_state, error_code, error_message, processed_at
+                ) VALUES (
+                    :op_id, :entity_id, :status, :old_state, :new_state, :error_code, :error_message, NOW()
+                )
+            ");
+
+            foreach ($batchResults as $res) {
+                $itemStatus = $res['status'];
+                if ($itemStatus === 'completed') {
+                    $successTotal++;
+                } elseif ($itemStatus === 'skipped') {
+                    $skippedTotal++;
+                } else {
+                    $failedTotal++;
+                }
+                $processedTotal++;
+
+                $itemInsertStmt->execute([
+                    'op_id' => $operationId,
+                    'entity_id' => (int)$res['entity_id'],
+                    'status' => $itemStatus,
+                    'old_state' => isset($res['old_value']) ? json_encode($res['old_value'], JSON_UNESCAPED_UNICODE) : null,
+                    'new_state' => isset($res['new_value']) ? json_encode($res['new_value'], JSON_UNESCAPED_UNICODE) : null,
+                    'error_code' => $res['error_code'] ?? null,
+                    'error_message' => $res['error_message'] ?? null,
+                ]);
+
+                $chunkResults[] = $res;
+            }
+        }
+
+        $isDone = empty($entities) || ($processedTotal >= $totalItems);
+
+        if ($isDone) {
+            if ($failedTotal > 0 && $successTotal === 0 && $skippedTotal === 0) {
+                $finalStatus = 'failed';
+            } elseif ($failedTotal > 0 || $skippedTotal > 0) {
+                $finalStatus = ($successTotal > 0) ? 'partial' : ($skippedTotal > 0 ? 'completed' : 'failed');
+            } else {
+                $finalStatus = 'completed';
+            }
+
+            $summaryData = [
+                'total' => $totalItems,
+                'processed' => $processedTotal,
+                'succeeded' => $successTotal,
+                'failed' => $failedTotal,
+                'skipped' => $skippedTotal,
+            ];
+
+            $this->pdo->prepare("
+                UPDATE bulk_operations
+                SET status = :status,
+                    processed_items = :processed,
+                    success_items = :success,
+                    failed_items = :failed,
+                    skipped_items = :skipped,
+                    completed_at = NOW(),
+                    result_data = :result_data,
+                    updated_at = NOW()
+                WHERE id = :id
+            ")->execute([
+                'status' => $finalStatus,
+                'processed' => $processedTotal,
+                'success' => $successTotal,
+                'failed' => $failedTotal,
+                'skipped' => $skippedTotal,
+                'result_data' => json_encode($summaryData, JSON_UNESCAPED_UNICODE),
+                'id' => $operationId,
+            ]);
+
+            // Audit
+            $this->auditService->log(
+                $userId,
+                $storeId,
+                'BULK_OPERATION_EXECUTED',
+                'bulk_operation',
+                (string)$operationId,
+                null,
+                [
+                    'status' => $finalStatus,
+                    'action' => $actionType,
+                    'target_entity' => $targetEntity,
+                    'summary' => $summaryData,
+                ]
+            );
+
+            $this->recordStoreBulkActivity($storeId, $userId, $targetEntity, $actionType, $successTotal);
+        } else {
+            $this->pdo->prepare("
+                UPDATE bulk_operations
+                SET processed_items = :processed,
+                    success_items = :success,
+                    failed_items = :failed,
+                    skipped_items = :skipped,
+                    updated_at = NOW()
+                WHERE id = :id
+            ")->execute([
+                'processed' => $processedTotal,
+                'success' => $successTotal,
+                'failed' => $failedTotal,
+                'skipped' => $skippedTotal,
+                'id' => $operationId,
+            ]);
+        }
+
+        $formattedOp = $this->getOperation($operationId, $storeId);
+        $formattedOp['chunk_results'] = $chunkResults;
+        $formattedOp['is_done'] = $isDone;
+        return $formattedOp;
+    }
+
+    /**
+     * Retry failed items from a previously executed bulk operation.
+     */
+    public function retryFailedItems(int $operationId, int $userId): array
+    {
+        $op = $this->getOperationByIdRaw($operationId);
+        if (!$op) {
+            throw new InvalidArgumentException("عملیات گروهی یافت نشد.");
+        }
+
+        $storeId = (int)$op['store_id'];
+
+        // Get failed items
+        $stmt = $this->pdo->prepare("
+            SELECT entity_id FROM bulk_operation_items
+            WHERE bulk_operation_id = :op_id AND status = 'failed'
+        ");
+        $stmt->execute(['op_id' => $operationId]);
+        $failedIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        if (empty($failedIds)) {
+            throw new InvalidArgumentException("هیچ آیتم ناموفقی در این عملیات برای تلاش مجدد وجود ندارد.");
+        }
+
+        $payload = is_string($op['payload']) ? json_decode($op['payload'], true) : $op['payload'];
+        $actionData = $payload['action'] ?? [];
+
+        // Build new requestData targeting only failed IDs
+        $newRequestData = [
+            'entity' => $op['target_entity'],
+            'action' => $actionData,
+            'selection' => [
+                'type' => 'ids',
+                'ids' => array_values(array_unique(array_map('intval', $failedIds))),
+            ],
+            'filter' => [],
+        ];
+
+        return $this->createOperation($storeId, $userId, $newRequestData);
+    }
+
+    /**
+     * Presets management: List presets for store
+     */
+    public function listPresets(int $storeId): array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT p.*, u.username, COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.username) AS user_display_name
+            FROM bulk_operation_presets p
+            LEFT JOIN users u ON p.user_id = u.id
+            WHERE p.store_id = :store_id
+            ORDER BY p.id DESC
+        ");
+        $stmt->execute(['store_id' => $storeId]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return array_map(function ($r) {
+            return [
+                'id' => (int)$r['id'],
+                'store_id' => (int)$r['store_id'],
+                'user_id' => (int)$r['user_id'],
+                'user_name' => $r['user_display_name'] ?? $r['username'],
+                'title' => $r['title'],
+                'description' => $r['description'],
+                'target_entity' => $r['target_entity'],
+                'filter_criteria' => is_string($r['filter_criteria']) ? json_decode($r['filter_criteria'], true) : $r['filter_criteria'],
+                'action_data' => is_string($r['action_data']) ? json_decode($r['action_data'], true) : $r['action_data'],
+                'created_at' => $r['created_at'],
+                'updated_at' => $r['updated_at'],
+            ];
+        }, $rows);
+    }
+
+    /**
+     * Create a new preset
+     */
+    public function createPreset(int $storeId, int $userId, array $data): array
+    {
+        $title = trim((string)($data['title'] ?? ''));
+        if (empty($title)) {
+            throw new InvalidArgumentException("عنوان الگو الزامی است.");
+        }
+
+        $stmt = $this->pdo->prepare("
+            INSERT INTO bulk_operation_presets (store_id, user_id, title, description, target_entity, filter_criteria, action_data, created_at, updated_at)
+            VALUES (:store_id, :user_id, :title, :description, :target_entity, :filter_criteria, :action_data, NOW(), NOW())
+        ");
+
+        $stmt->execute([
+            'store_id' => $storeId,
+            'user_id' => $userId,
+            'title' => $title,
+            'description' => $data['description'] ?? null,
+            'target_entity' => $data['target_entity'] ?? 'products',
+            'filter_criteria' => json_encode($data['filter_criteria'] ?? [], JSON_UNESCAPED_UNICODE),
+            'action_data' => json_encode($data['action_data'] ?? [], JSON_UNESCAPED_UNICODE),
+        ]);
+
+        $presetId = (int)$this->pdo->lastInsertId();
+
+        return [
+            'id' => $presetId,
+            'store_id' => $storeId,
+            'user_id' => $userId,
+            'title' => $title,
+            'description' => $data['description'] ?? null,
+            'target_entity' => $data['target_entity'] ?? 'products',
+            'filter_criteria' => $data['filter_criteria'] ?? [],
+            'action_data' => $data['action_data'] ?? [],
+        ];
+    }
+
+    /**
+     * Delete a preset
+     */
+    public function deletePreset(int $presetId, int $storeId): bool
+    {
+        $stmt = $this->pdo->prepare("DELETE FROM bulk_operation_presets WHERE id = :id AND store_id = :store_id");
+        $stmt->execute(['id' => $presetId, 'store_id' => $storeId]);
+        return $stmt->rowCount() > 0;
+    }
+
+    /**
      * Retrieve operation details with store scoping and items summary.
      */
     public function getOperation(int $operationId, int $storeId): ?array
@@ -680,4 +986,105 @@ class BulkOperationEngine
             // Activity log non-fatal
         }
     }
+
+    public function evaluateTarget(int $storeId, int $userId, array $requestData): array
+    {
+        $store = $this->storeRepo->findById($storeId);
+        if (!$store) {
+            throw new InvalidArgumentException("فروشگاه مورد نظر یافت نشد.");
+        }
+
+        $entityType = $requestData['entity'] ?? ($requestData['target_entity'] ?? 'products');
+        $handler = $this->getHandler($entityType);
+
+        $selection = $requestData['selection'] ?? [];
+        $filter = $requestData['filter'] ?? ($selection['filter'] ?? []);
+        $targetScope = $requestData['target_scope'] ?? ($requestData['target'] ?? 'parent');
+        if (!in_array($targetScope, ['parent', 'variations', 'both'], true)) {
+            $targetScope = 'parent';
+        }
+
+        $parentCount = $handler->resolveCount($store, $selection, $filter);
+        $sampleEntities = $handler->resolveSample($store, $selection, $filter, 15);
+
+        $sampleCount = count($sampleEntities);
+        $variableCountInSample = 0;
+        $sampleVariationCount = 0;
+        $adapter = new \App\Integrations\WooCommerce\ProductAdapter($store);
+
+        $sampleList = [];
+        foreach ($sampleEntities as $prod) {
+            $isVariable = ($prod['type'] ?? '') === 'variable' || !empty($prod['variations']);
+            if ($isVariable) {
+                $variableCountInSample++;
+            }
+
+            $catNames = array_map(fn($c) => $c['name'] ?? '', $prod['categories'] ?? []);
+
+            $sampleList[] = [
+                'id' => (int)$prod['id'],
+                'name' => (string)($prod['name'] ?? "محصول #{$prod['id']}"),
+                'type' => $prod['type'] ?? 'simple',
+                'sku' => (string)($prod['sku'] ?? ''),
+                'regular_price' => $prod['regular_price'] ?? '',
+                'sale_price' => $prod['sale_price'] ?? '',
+                'price' => $prod['price'] ?? '',
+                'stock_quantity' => $prod['stock_quantity'] ?? null,
+                'stock_status' => $prod['stock_status'] ?? 'instock',
+                'categories' => $catNames,
+                'is_variable' => $isVariable,
+            ];
+
+            if (($targetScope === 'variations' || $targetScope === 'both') && $isVariable) {
+                try {
+                    $varsRes = $adapter->listVariations((int)$prod['id']);
+                    $vars = $varsRes['data'] ?? (is_array($varsRes) ? $varsRes : []);
+                    $sampleVariationCount += count($vars);
+                } catch (\Exception $e) {
+                    // Non-blocking
+                }
+            }
+        }
+
+        $estimatedVariationsCount = $sampleVariationCount;
+        if ($parentCount > $sampleCount && $sampleCount > 0) {
+            $estimatedVariationsCount = (int)round(($sampleVariationCount / $sampleCount) * $parentCount);
+        }
+
+        $estimatedVariableCount = $sampleCount > 0 ? (int)round(($variableCountInSample / $sampleCount) * $parentCount) : 0;
+        $estimatedSimpleCount = max(0, $parentCount - $estimatedVariableCount);
+
+        if (($filter['type'] ?? '') === 'simple') {
+            $estimatedSimpleCount = $parentCount;
+            $estimatedVariableCount = 0;
+            $estimatedVariationsCount = 0;
+        } elseif (($filter['type'] ?? '') === 'variable') {
+            $estimatedSimpleCount = 0;
+            $estimatedVariableCount = $parentCount;
+        }
+
+        $finalAffectedCount = match ($targetScope) {
+            'variations' => max($sampleVariationCount, $estimatedVariationsCount),
+            'both' => $parentCount + max($sampleVariationCount, $estimatedVariationsCount),
+            default => $parentCount,
+        };
+
+        return [
+            'entity' => $handler->getEntityType(),
+            'total_parents' => $parentCount,
+            'affected_count' => $finalAffectedCount,
+            'simple_count' => $estimatedSimpleCount,
+            'variable_count' => $estimatedVariableCount,
+            'variation_count' => max($sampleVariationCount, $estimatedVariationsCount),
+            'target_scope' => $targetScope,
+            'sample_products' => $sampleList,
+            'breakdown' => [
+                'simple' => $estimatedSimpleCount,
+                'variable' => $estimatedVariableCount,
+                'variation' => max($sampleVariationCount, $estimatedVariationsCount),
+                'total' => $finalAffectedCount,
+            ],
+        ];
+    }
 }
+

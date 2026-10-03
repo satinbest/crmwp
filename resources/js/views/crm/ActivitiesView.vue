@@ -99,7 +99,7 @@
 
             <!-- Details Payload -->
             <div v-if="act.details && Object.keys(act.details).length > 0" class="pt-1">
-              <div class="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-700/60 text-[11px] font-mono text-slate-600 dark:text-slate-300 overflow-x-auto">
+              <div class="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-700/60 text-[11px] text-slate-600 dark:text-slate-300 overflow-x-auto">
                 <div v-for="(val, key) in act.details" :key="key" class="flex gap-2">
                   <span class="text-slate-400">{{ key }}:</span>
                   <span class="font-semibold">{{ val }}</span>

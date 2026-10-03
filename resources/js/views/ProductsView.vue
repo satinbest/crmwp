@@ -317,7 +317,7 @@
               </td>
 
               <!-- SKU -->
-              <td v-if="visibleColumns.sku" class="p-3.5 font-mono text-slate-500 dark:text-slate-400 dir-ltr text-right">
+              <td v-if="visibleColumns.sku" class="p-3.5 text-slate-500 dark:text-slate-400 dir-ltr text-right">
                 {{ prod.sku || '—' }}
               </td>
 
@@ -628,9 +628,7 @@ const onBulkCompleted = () => {
 const fetchCategories = async () => {
   try {
     const res = await api.get('/product-categories');
-    if (res.data?.success) {
-      categories.value = res.data.data || [];
-    }
+    categories.value = res.data || [];
   } catch (err) {
     console.error('Categories fetch error:', err);
   }
@@ -651,13 +649,13 @@ const fetchProducts = async () => {
     if (filters.category !== 'all') params.category = filters.category;
 
     const res = await api.get('/products', { params });
-    if (res.data?.success) {
-      products.value = res.data.data || [];
-      meta.total = res.data.meta?.total || 0;
-      meta.total_pages = res.data.meta?.total_pages || 1;
+    products.value = res.data || [];
+    if (res.meta) {
+      meta.total = res.meta.total || 0;
+      meta.total_pages = res.meta.total_pages || 1;
     }
   } catch (err) {
-    notification.error(err.response?.data?.error?.message || 'خطا در بارگذاری لیست محصولات');
+    notification.error(err.message || 'خطا در بارگذاری لیست محصولات');
   } finally {
     loading.value = false;
   }
@@ -713,13 +711,13 @@ const executeDelete = async () => {
     const res = await api.delete(`/products/${productToDelete.value.id}`, {
       params: { force: deletePermanently.value },
     });
-    if (res.data?.success) {
-      notification.success(res.data.meta?.message || 'محصول با موفقیت حذف گردید.');
+    if (res.success || res.data) {
+      notification.success(res.meta?.message || 'محصول با موفقیت حذف گردید.');
       productToDelete.value = null;
       fetchProducts();
     }
   } catch (err) {
-    notification.error(err.response?.data?.error?.message || 'خطا در حذف محصول');
+    notification.error(err.message || 'خطا در حذف محصول');
   } finally {
     deleting.value = false;
   }

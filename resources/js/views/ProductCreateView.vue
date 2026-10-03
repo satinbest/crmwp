@@ -278,9 +278,9 @@ const submitCreate = async () => {
     }
 
     const res = await api.post('/products', payload);
-    if (res.data?.success) {
-      notification.success('محصول با موفقیت در ووکامرس ایجاد شد.');
-      const newId = res.data.data?.id;
+    if (res.data || res.success) {
+      notification.success(res.meta?.message || 'محصول با موفقیت در ووکامرس ایجاد شد.');
+      const newId = res.data?.id;
       if (newId) {
         router.push(`/products/${newId}`);
       } else {
@@ -288,7 +288,7 @@ const submitCreate = async () => {
       }
     }
   } catch (err) {
-    notification.error(err.response?.data?.error?.message || 'خطا در ایجاد محصول');
+    notification.error(err.message || 'خطا در ایجاد محصول');
   } finally {
     creating.value = false;
   }

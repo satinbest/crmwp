@@ -232,7 +232,7 @@
                 <label class="block text-xs font-bold text-slate-700 dark:text-slate-200">رنگ برچسب:</label>
                 <div class="flex items-center gap-2">
                   <input type="color" v-model="actionParams.color" class="w-8 h-8 rounded-lg cursor-pointer border border-slate-200 dark:border-slate-700" />
-                  <span class="text-xs font-mono text-slate-500">{{ actionParams.color }}</span>
+                  <span class="text-xs text-slate-500">{{ actionParams.color }}</span>
                 </div>
               </div>
             </div>
@@ -732,14 +732,14 @@ const loadPreview = async () => {
   loadingPreview.value = true;
   try {
     const res = await api.post('/bulk-operations/preview', buildPayload());
-    if (res.data?.success) {
-      previewData.value = res.data.data;
+    if (res?.success !== false) {
+      previewData.value = res.data;
       step.value = 2;
     } else {
-      notification.error(res.data?.error?.message || 'خطا در دریافت پیش‌نمایش');
+      notification.error(res.error?.message || 'خطا در دریافت پیش‌نمایش');
     }
   } catch (err) {
-    notification.error(err.response?.data?.error?.message || 'خطا در دریافت پیش‌نمایش');
+    notification.error(err.message || 'خطا در دریافت پیش‌نمایش');
   } finally {
     loadingPreview.value = false;
   }
@@ -749,16 +749,16 @@ const executeBulkOperation = async () => {
   isProcessing.value = true;
   try {
     const res = await api.post('/bulk-operations', buildPayload());
-    if (res.data?.success) {
-      operationResult.value = res.data.data;
-      currentProgress.value = res.data.data;
+    if (res?.success !== false) {
+      operationResult.value = res.data;
+      currentProgress.value = res.data;
       notification.success('عملیات گروهی با موفقیت اجرا شد.');
-      emit('completed', res.data.data);
+      emit('completed', res.data);
     } else {
-      notification.error(res.data?.error?.message || 'خطا در اجرای عملیات');
+      notification.error(res.error?.message || 'خطا در اجرای عملیات');
     }
   } catch (err) {
-    notification.error(err.response?.data?.error?.message || 'خطا در اجرای عملیات');
+    notification.error(err.message || 'خطا در اجرای عملیات');
   } finally {
     isProcessing.value = false;
   }
@@ -768,13 +768,13 @@ const cancelCurrentOperation = async () => {
   if (!currentProgress.value?.id) return;
   try {
     const res = await api.post(`/bulk-operations/${currentProgress.value.id}/cancel`);
-    if (res.data?.success) {
+    if (res?.success !== false) {
       notification.info('دستور لغو ارسال شد.');
-      currentProgress.value = res.data.data;
+      currentProgress.value = res.data;
       isProcessing.value = false;
     }
   } catch (err) {
-    notification.error(err.response?.data?.error?.message || 'خطا در لغو عملیات');
+    notification.error(err.message || 'خطا در لغو عملیات');
   }
 };
 

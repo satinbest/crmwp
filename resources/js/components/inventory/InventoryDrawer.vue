@@ -34,7 +34,7 @@
                 {{ item?.display_name || 'مدیریت موجودی' }}
               </h2>
               <p class="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
-                <span>SKU: <span class="font-mono dir-ltr inline-block">{{ item?.sku || 'فاقد کد' }}</span></span>
+                <span>SKU: <span class="dir-ltr inline-block">{{ item?.sku || 'فاقد کد' }}</span></span>
                 <span>•</span>
                 <span>شناسه: #{{ toPersianDigits(item?.variation_id || item?.product_id) }}</span>
               </p>
@@ -336,7 +336,7 @@
                     {{ v.variation_name || ('تنوع #' + toPersianDigits(v.id)) }}
                   </div>
                   <div class="text-[11px] text-slate-400 mt-0.5">
-                    <span>SKU: <span class="font-mono dir-ltr inline-block">{{ v.sku || '—' }}</span></span> | وضعیت: {{ v.stock_status_label }}
+                    <span>SKU: <span class="dir-ltr inline-block">{{ v.sku || '—' }}</span></span> | وضعیت: {{ v.stock_status_label }}
                   </div>
                 </div>
 
@@ -518,12 +518,12 @@ const executeStockChange = async (operation, amount) => {
     };
 
     const res = await api.patch(url, payload);
-    if (res.data?.success) {
-      notification.success(res.data.meta?.message || 'موجودی با موفقیت بروزرسانی شد.');
-      emit('updated', res.data.data);
+    if (res?.success !== false) {
+      notification.success(res.meta?.message || 'موجودی با موفقیت بروزرسانی شد.');
+      emit('updated', res.data);
     }
   } catch (err) {
-    notification.error(err.response?.data?.error?.message || 'خطا در بروزرسانی موجودی انبار');
+    notification.error(err.message || 'خطا در بروزرسانی موجودی انبار');
   } finally {
     updatingStock.value = false;
   }
@@ -547,12 +547,12 @@ const executeStatusChange = async () => {
     };
 
     const res = await api.patch(url, payload);
-    if (res.data?.success) {
-      notification.success(res.data.meta?.message || 'وضعیت انبار با موفقیت بروزرسانی شد.');
-      emit('updated', res.data.data);
+    if (res?.success !== false) {
+      notification.success(res.meta?.message || 'وضعیت انبار با موفقیت بروزرسانی شد.');
+      emit('updated', res.data);
     }
   } catch (err) {
-    notification.error(err.response?.data?.error?.message || 'خطا در بروزرسانی وضعیت انبار');
+    notification.error(err.message || 'خطا در بروزرسانی وضعیت انبار');
   } finally {
     updatingStatus.value = false;
   }
@@ -576,12 +576,12 @@ const saveConfiguration = async () => {
     };
 
     const res = await api.patch(url, payload);
-    if (res.data?.success) {
-      notification.success(res.data.meta?.message || 'پیکربندی انبارداری ذخیره گردید.');
-      emit('updated', res.data.data);
+    if (res?.success !== false) {
+      notification.success(res.meta?.message || 'پیکربندی انبارداری ذخیره گردید.');
+      emit('updated', res.data);
     }
   } catch (err) {
-    notification.error(err.response?.data?.error?.message || 'خطا در ذخیره پیکربندی انبار');
+    notification.error(err.message || 'خطا در ذخیره پیکربندی انبار');
   } finally {
     savingConfig.value = false;
   }
@@ -591,8 +591,8 @@ const loadVariations = async (prodId) => {
   loadingVariations.value = true;
   try {
     const res = await api.get(`/products/${prodId}/variations`);
-    if (res.data?.success) {
-      variationsList.value = res.data.data || [];
+    if (res?.success !== false) {
+      variationsList.value = res.data || [];
     }
   } catch (e) {
     console.error('Failed to load variations:', e);

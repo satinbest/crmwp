@@ -70,7 +70,7 @@
                 </span>
               </div>
               <div class="text-[11px] text-slate-400 mt-0.5">
-                شناسه: <span class="font-mono dir-ltr inline-block">{{ role.slug || role.name }}</span>
+                شناسه: <span class="dir-ltr inline-block">{{ role.slug || role.name }}</span>
               </div>
             </div>
 
@@ -99,7 +99,7 @@
             <div>
               <div class="text-[10px] text-slate-400">تعداد مجوزها</div>
               <div class="font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
-                {{ toPersianDigits(role.permissions_count || 0) }} مجوز
+                {{ toPersianDigits(role.permissions?.length ?? role.permissions_count ?? 0) }} مجوز
               </div>
             </div>
           </div>
@@ -109,7 +109,7 @@
         <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
           <button
             @click="openPermissionDrawer(role)"
-            class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-xs font-semibold transition-colors"
+            class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-xs font-semibold transition-colors cursor-pointer"
           >
             <Iconsax name="shield-tick" size="16" />
             <span>تنظیم مجوزها</span>
@@ -120,7 +120,7 @@
               v-if="canCreateRole"
               @click="duplicateRole(role)"
               title="تکثیر این نقش"
-              class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               <Iconsax name="copy" size="16" />
             </button>
@@ -129,7 +129,7 @@
               v-if="canEditRole"
               @click="openEditModal(role)"
               title="ویرایش اطلاعات نقش"
-              class="p-2 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors"
+              class="p-2 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors cursor-pointer"
             >
               <Iconsax name="edit" size="16" />
             </button>
@@ -138,7 +138,7 @@
               v-if="canDeleteRole && !isSystemRole(role)"
               @click="deleteRole(role)"
               title="حذف نقش"
-              class="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+              class="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
             >
               <Iconsax name="trash" size="16" />
             </button>
@@ -175,17 +175,16 @@
 
           <div>
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              شناسه سیستمی (Slug / Machine Name) *
+              شناسه سیستمی (Slug / Machine Name)
             </label>
             <input
               v-model="form.name"
               type="text"
-              required
               :disabled="isEditing && isSystemRole(selectedRole)"
               placeholder="مثلاً: sales_specialist"
-              class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:opacity-50"
+              class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:opacity-50"
             />
-            <p class="text-[10px] text-slate-400 mt-1">فقط حروف انگلیسی کوچک، اعداد و خط فاصله یا زیرخط</p>
+            <p class="text-[10px] text-slate-400 mt-1">فقط حروف انگلیسی کوچک، اعداد و خط فاصله یا زیرخط (اختیاری)</p>
           </div>
 
           <div>
@@ -221,14 +220,14 @@
             <button
               type="button"
               @click="showModal = false"
-              class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+              class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
             >
               انصراف
             </button>
             <button
               type="submit"
               :disabled="submitting"
-              class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center gap-2"
+              class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center gap-2 cursor-pointer"
             >
               <div v-if="submitting" class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               <span>{{ isEditing ? 'بروزرسانی نقش' : 'ایجاد نقش' }}</span>
@@ -292,7 +291,7 @@ const fetchRoles = async () => {
   error.value = null;
   try {
     const res = await apiClient.get('/roles');
-    roles.value = res.data.roles || [];
+    roles.value = Array.isArray(res.data) ? res.data : (res.data?.roles || []);
   } catch (err) {
     error.value = err.message || 'خطا در بارگذاری نقش‌ها';
   } finally {
@@ -313,7 +312,7 @@ const openCreateModal = () => {
 const openEditModal = (role) => {
   isEditing.value = true;
   selectedRole.value = role;
-  form.name = role.name || role.slug;
+  form.name = role.slug || role.name;
   form.display_name = role.display_name || role.name;
   form.description = role.description || '';
   form.status = role.status || 'active';
@@ -325,19 +324,18 @@ const saveRole = async () => {
   submitting.value = true;
   formError.value = null;
   try {
+    const payload = {
+      name: form.display_name || form.name,
+      display_name: form.display_name,
+      slug: form.name ? form.name.toLowerCase().replace(/[^a-z0-9_]/g, '_') : undefined,
+      description: form.description,
+      status: form.status,
+    };
+
     if (isEditing.value) {
-      await apiClient.patch(`/roles/${selectedRole.value.id}`, {
-        display_name: form.display_name,
-        description: form.description,
-        status: form.status,
-      });
+      await apiClient.patch(`/roles/${selectedRole.value.id}`, payload);
     } else {
-      await apiClient.post('/roles', {
-        name: form.name,
-        display_name: form.display_name,
-        description: form.description,
-        status: form.status,
-      });
+      await apiClient.post('/roles', payload);
     }
     showModal.value = false;
     await fetchRoles();
@@ -354,7 +352,7 @@ const duplicateRole = async (role) => {
 
   try {
     await apiClient.post(`/roles/${role.id}/duplicate`, {
-      display_name: newName,
+      name: newName,
     });
     await fetchRoles();
   } catch (err) {

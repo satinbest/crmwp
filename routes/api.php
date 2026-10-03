@@ -19,11 +19,16 @@ use App\Support\Router;
 /** @var Router $router */
 
 $router->group(['prefix' => '/api/v1'], function (Router $api) {
-    // Health, Liveness and Readiness (Phase 16)
+    // System & Health Endpoints
     $api->get('/health', [SystemController::class, 'health']);
     $api->get('/health/liveness', [SystemController::class, 'liveness']);
     $api->get('/health/ready', [SystemController::class, 'readiness']);
     $api->get('/system/health', [SystemController::class, 'health']);
+    $api->get('/system/about', [SystemController::class, 'about']);
+    $api->get('/about', [SystemController::class, 'about']);
+    $api->get('/system/cache', [SystemController::class, 'cacheInfo'], [\App\Middleware\AuthMiddleware::class]);
+    $api->post('/system/cache/test', [SystemController::class, 'testCacheConnection'], [\App\Middleware\AuthMiddleware::class]);
+    $api->post('/system/cache/flush', [SystemController::class, 'flushCache'], [\App\Middleware\AuthMiddleware::class]);
     $api->get('/system/cron', [SystemController::class, 'cron']);
     $api->post('/system/cron', [SystemController::class, 'cron']);
 
@@ -460,7 +465,23 @@ $router->group(['prefix' => '/api/v1'], function (Router $api) {
         PermissionMiddleware::for('products.delete'),
     ]);
 
-    // Bulk Operations Engine (Phase 7)
+    // Bulk Operations Engine (Phase 7 & Product Bulk Center)
+    $api->get('/bulk-operations/presets', [\App\Controllers\BulkOperationController::class, 'presets'], [
+        AuthMiddleware::class,
+    ]);
+
+    $api->post('/bulk-operations/presets', [\App\Controllers\BulkOperationController::class, 'createPreset'], [
+        AuthMiddleware::class,
+    ]);
+
+    $api->delete('/bulk-operations/presets/{id}', [\App\Controllers\BulkOperationController::class, 'deletePreset'], [
+        AuthMiddleware::class,
+    ]);
+
+    $api->post('/bulk-operations/evaluate-target', [\App\Controllers\BulkOperationController::class, 'evaluateTarget'], [
+        AuthMiddleware::class,
+    ]);
+
     $api->post('/bulk-operations/preview', [\App\Controllers\BulkOperationController::class, 'preview'], [
         AuthMiddleware::class,
     ]);
@@ -474,6 +495,14 @@ $router->group(['prefix' => '/api/v1'], function (Router $api) {
     ]);
 
     $api->get('/bulk-operations/{id}', [\App\Controllers\BulkOperationController::class, 'show'], [
+        AuthMiddleware::class,
+    ]);
+
+    $api->post('/bulk-operations/{id}/chunk', [\App\Controllers\BulkOperationController::class, 'chunk'], [
+        AuthMiddleware::class,
+    ]);
+
+    $api->post('/bulk-operations/{id}/retry-failed', [\App\Controllers\BulkOperationController::class, 'retryFailed'], [
         AuthMiddleware::class,
     ]);
 

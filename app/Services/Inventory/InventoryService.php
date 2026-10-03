@@ -335,59 +335,52 @@ class InventoryService
     public function getDashboardMetrics(Store $store): array
     {
         $storeId = (int)$store->id;
-        $now = time();
 
-        // Check cache (TTL 60 seconds)
-        if (isset(self::$metricsCache[$storeId]) && ($now - self::$metricsCache[$storeId]['time']) < 60) {
-            return self::$metricsCache[$storeId]['metrics'];
-        }
+        return \App\Support\Cache::storeRemember($storeId, 'inventory', 'metrics', \App\Support\Cache::TTL_INVENTORY, function () use ($store, $storeId) {
+            $adapter = new ProductAdapter($store);
 
-        $adapter = new ProductAdapter($store);
+            // Fetch products in a single call (up to 100) to compute all metrics without N+1 HTTP requests
+            $res = $adapter->listProducts(['per_page' => 100]);
+            $items = $res['data'] ?? [];
+            $meta = $res['meta'] ?? [];
+            $catalogTotal = (int)($meta['total'] ?? count($items));
 
-        // Fetch counts using per_page=1 to read X-WP-Total header efficiently
-        $inStockMeta = $adapter->listProducts(['per_page' => 1, 'stock_status' => 'instock'])['meta'] ?? [];
-        $outOfStockMeta = $adapter->listProducts(['per_page' => 1, 'stock_status' => 'outofstock'])['meta'] ?? [];
-        $backorderMeta = $adapter->listProducts(['per_page' => 1, 'stock_status' => 'onbackorder'])['meta'] ?? [];
-        $totalMeta = $adapter->listProducts(['per_page' => 1])['meta'] ?? [];
+            $inStockTotal = 0;
+            $outOfStockTotal = 0;
+            $backorderTotal = 0;
+            $managingCount = 0;
+            $lowStockCount = 0;
 
-        // Sample products to estimate low stock and manage_stock
-        $sampleRes = $adapter->listProducts(['per_page' => 100, 'stock_status' => 'instock']);
-        $sampleItems = $sampleRes['data'] ?? [];
+            foreach ($items as $prod) {
+                $item = InventoryNormalizer::normalizeProduct($prod, $storeId);
+                $status = $item['stock_status'] ?? 'instock';
+                if ($status === 'instock') {
+                    $inStockTotal++;
+                } elseif ($status === 'outofstock') {
+                    $outOfStockTotal++;
+                } elseif ($status === 'onbackorder') {
+                    $backorderTotal++;
+                }
 
-        $managingCount = 0;
-        $lowStockCount = 0;
-        foreach ($sampleItems as $prod) {
-            $item = InventoryNormalizer::normalizeProduct($prod, $storeId);
-            if ($item['manage_stock']) {
-                $managingCount++;
-                if ($item['is_low_stock']) {
-                    $lowStockCount++;
+                if (!empty($item['manage_stock'])) {
+                    $managingCount++;
+                    if (!empty($item['is_low_stock'])) {
+                        $lowStockCount++;
+                    }
                 }
             }
-        }
 
-        $inStockTotal = (int)($inStockMeta['total'] ?? 0);
-        $outOfStockTotal = (int)($outOfStockMeta['total'] ?? 0);
-        $backorderTotal = (int)($backorderMeta['total'] ?? 0);
-        $catalogTotal = (int)($totalMeta['total'] ?? 0);
-
-        $metrics = [
-            'total_products' => $catalogTotal,
-            'instock' => $inStockTotal,
-            'outofstock' => $outOfStockTotal,
-            'onbackorder' => $backorderTotal,
-            'low_stock' => $lowStockCount,
-            'managing_stock' => $managingCount,
-            'not_managing_stock' => max(0, $catalogTotal - $managingCount),
-            'generated_at' => date('Y-m-d H:i:s'),
-        ];
-
-        self::$metricsCache[$storeId] = [
-            'time' => $now,
-            'metrics' => $metrics,
-        ];
-
-        return $metrics;
+            return [
+                'total_products' => $catalogTotal,
+                'instock' => $inStockTotal,
+                'outofstock' => $outOfStockTotal,
+                'onbackorder' => $backorderTotal,
+                'low_stock' => $lowStockCount,
+                'managing_stock' => $managingCount,
+                'not_managing_stock' => max(0, $catalogTotal - $managingCount),
+                'generated_at' => date('Y-m-d H:i:s'),
+            ];
+        });
     }
 
     /**
@@ -416,6 +409,6 @@ class InventoryService
 
     public function invalidateMetricsCache(int $storeId): void
     {
-        unset(self::$metricsCache[$storeId]);
+        \App\Support\Cache::forgetStoreResource($storeId, 'inventory');
     }
 }
