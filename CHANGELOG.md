@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-10-06
+
+### Added
+- **Redesigned Modern WooCommerce Management Dashboard**: Re-architected the main CRM dashboard into an operational store command center featuring live sales and order metrics, operational status cards (pending, processing, completed, low stock), interactive daily sales trend chart, order status distribution bar, customer widgets (recent and top customers), inventory low-stock alerts, and recent store activity feeds.
+- **Centralized & Extensible Section Help System**: Added contextual `HelpButton` and popovers to all primary widgets and KPI sections backed by a centralized repository (`resources/js/config/helpContent.js`). Popovers dynamically calculate screen bounds, render via body teleportation to avoid parent container overflow clipping, and handle RTL alignment, Escape key, and click-outside dismissal.
+- **Secure Developer Donation (Donate) System**: Integrated a polite, minimalist donation button in the top navigation header adjacent to notifications. Connected to a secure backend endpoint (`GET /api/v1/system/donate`) that reads configuration (`DONATE_RECIPIENT_NAME`, `DONATE_CARD_NUMBER`, `DONATE_EMAIL`, `DONATE_GITHUB`) from the environment, completely eliminating hardcoded financial secrets from frontend bundles and Git history. Includes copy-to-clipboard functionality with localized status feedback.
+- **Enhanced Iconsax SVG Icon Set**: Added native local SVG vector definitions for `heart`, `info-circle`, `question`, `copy`, `tick-circle`, `profile-circle`, `calendar-2`, `clock-1`, `bag-2`, and `money-recive`.
+
+### Changed & Improved
+- **Header Layout & Alignment Overhaul**: Reorganized header control hierarchy (`[Donate] [Notifications] [User/Avatar]`), normalized icon sizes, padding, and vertical centering across desktop and mobile screens.
+- **Removed Intrusive Vertical Divider**: Eliminated the unwanted vertical border beside the user profile section in `AppLayout.vue`.
+- **Avatar & Font Isolation**: Guaranteed 100% internal avatar handling with local Iconsax `profile-circle` fallback, completely removing any possibility of external Gravatar requests or font CDN calls.
+- **Live Jalali Calendar & Clock**: Integrated real-time Jalali date display and live clock synchronized to the store/application timezone (`Asia/Tehran`).
+- **Object Cache TCP & Unix Socket Reliability**: Enhanced Memcached connection testing to perform full set/get/verify/delete lifecycles, accurately handle Unix domain sockets, and present genuine Hit Ratio calculations (showing "بدون داده" for zero hits/misses).
+
+---
+
 ## [1.0.1] - 2026-10-05
 
 ### Fixed

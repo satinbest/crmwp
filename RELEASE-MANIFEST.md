@@ -2,14 +2,17 @@
 
 ## مشخصات بسته انتشار پروداکشن (Production Release Package)
 
-* **Application Version**: `1.0.1 (Production Stable)`
-* **Release Date**: ۰۵ اکتبر ۲۰۲۶ (۱۴۰۵/۰۷/۱۴)
-* **Build Status**: `PASSED` (تمامی تست‌های امنیتی، استقرار، مایگریشن و عملیات گروهی ۱۰۰٪ موفق)
-* **Archive File**: `CRM-Production-Release-1.0.1.zip`
+* **Application Name**: WooCommerce Management & CRM Platform (`satinbest/crmwp`)
+* **Application Version**: `1.1.0 (Production Stable)`
+* **Release Date**: ۰۶ اکتبر ۲۰۲۶ (۱۴۰۵/۰۷/۱۵)
+* **Build Status**: `PASSED` (تمامی تست‌های امنیتی، استقرار، سلامت، داشبورد و ارتباط API ۱۰۰٪ موفق)
+* **Archive File**: `CRM-Production-Release-1.1.0.zip`
+* **Workspace Archive**: `CRM-Production-Release-1.1.0.zip`
 * **Release Folder**: `release/`
-* **Database Migration Version**: ۱۸ مایگریشن کامل (`001_create_roles_and_permissions_tables.php` تا `018_create_phase15_automations_tables.php`)
+* **SHA-256 Checksum**: `2980b81c4c3bf4d69a22857a02c69108185b6e081ebb4404c99ecc5a41325171`
+* **Database Migration Version**: ۱۹ مایگریشن ساختار پایگاه داده (`app/Database/Migrations/`)
 * **PHP Requirements**: حداقل `PHP 8.2.0` (تست‌شده روی PHP 8.2, 8.3, 8.4)
-* **MariaDB Requirements**: MariaDB 10.6+ / 11.x یا MySQL 8.0+ با Charset `utf8mb4` و Collation `utf8mb4_unicode_ci` (موتور InnoDB با پشتیبانی Foreign Keys و Transactions)
+* **MariaDB / MySQL Requirements**: MariaDB 10.6+ / 11.x یا MySQL 8.0+ با Charset `utf8mb4` و Collation `utf8mb4_unicode_ci` (موتور InnoDB با پشتیبانی Foreign Keys و Transactions)
 * **Required PHP Extensions**:
   * `pdo` و `pdo_mysql`: ارتباط امن و پایدار با دیتابیس
   * `openssl`: رمزنگاری متقارن AES-256-CBC کلیدهای اتصال و سکرت‌ها
@@ -18,16 +21,103 @@
   * `json`: اعتبارسنجی و تبدیل Payloadهای ساختاریافته
   * `session`: مدیریت نشست‌های امن با فلگ‌های ایزوله (HttpOnly, SameSite=Lax/Strict)
   * `fileinfo`: اعتبارسنجی امن فایل‌های آپلودی
+* **Optional / Recommended PHP Extensions**:
+  * `memcached` یا `memcache`: اتصال کش شیء توزیع‌شده (TCP / Unix Socket)
+  * `apcu`: شتاب‌دهنده حافظه محلی
+  * `zip`: پشتیبان‌گیری و بازگشایی بسته‌ها
 * **Production Runtime Requirements**: وب‌سرور استاندارد (Apache 2.4+ / Nginx / LiteSpeed) با PHP-FPM
 * **Installation Entry Point**: نصب‌کننده تحت وب: `http://your-domain.com/install` یا کنسول CLI: `php cli.php install`
 * **Cron Requirements**: اجرای دوره‌ای پس‌زمینه هر ۱ الی ۵ دقیقه از طریق CLI: `php cron.php` یا وب‌کرون ایمن: `GET /api/v1/system/cron?secret=YOUR_CRON_SECRET`
 * **Storage Requirements**: مجوز نوشتن وب‌سرور (`chmod 775` یا `755`) روی دایرکتوری `storage/` و زیرپوشه‌های `cache`, `logs`, `uploads`, `locks`, `temp`
-* **Known Limitations**: برای عملیات گروهی سنگین روی بیش از ۱۰۰۰ قلم کالا، توصیه می‌شود `memory_limit` در PHP حداقل `256M` یا `512M` و `max_execution_time` حداقل ۱۲۰ ثانیه باشد.
-* **Security Notes**:
+* **Security & Confidentiality Notes**:
   - هیچ داده‌ای از فروشگاه‌های پیشین یا پروداکشن در بسته قرار ندارد.
   - فرانت‌اند و دارایی‌های بصری (فونت Vazirmatn و آیکون‌ها) ۱۰۰٪ ایزوله و محلی هستند (بدون CDN و بدون فونت خارجی).
   - استفاده از هرگونه `font-mono` در طراحی حذف شده و فونت استاندارد با اعداد فارسی بومی فعال است.
-  - معماری لایه‌بندی Z-Index مرکزی پیاده‌سازی شده و بخش اعلانات روی هدر و تمامی محتواها بدون تداخل نمایش داده می‌شود.
+  - اطلاعات حساس حمایت مالی (شماره کارت بانکی و مشخصات) فقط در پیکربندی محرمانه بک‌اند مدیریت می‌شود و هیچ شماره کارتی در مخزن گیت یا سورس استاتیک قرار ندارد.
+  - هیچ درخواستی به Gravatar یا سرویس‌های خارجی فرستاده نمی‌شود؛ سیستم آواتار داخلی با نماد بومی `ProfileCircle` فعال است.
+
+---
+
+## تغییرات عمده و قابلیت‌های جدید نسخه ۱.۱.۰ (Major Features & Improvements)
+
+### ۱. بازطراحی کامل داشبورد مدیریتی ووکامرس
+- تبدیل داشبورد از یک صفحه معماری به **مرکز عملیاتی و زنده فروشگاه ووکامرس**.
+- کارت‌های شاخص کلیدی فروش، سفارش‌ها، مشتریان و محصولات با فیلترهای بازه زمانی و محاسبات زنده.
+- کارت‌های پیگیری فوری سفارش‌های در انتظار، در حال پردازش، تکمیل‌شده و هشدار اقلام کم‌موجودی انبار.
+- نمودار تعاملی روند فروش روزانه همراه با برچسب‌های مبلغ و تعداد سفارش‌ها.
+- نمودار توزیع وضعیت سفارش‌ها، تب‌های مشتریان جدید و مشتریان برتر، و فید رخدادهای زنده فروشگاه و CRM.
+- تقویم روز شمسی و ساعت زنده هماهنگ با تایم‌زون فروشگاه (`Asia/Tehran`).
+
+### ۲. سیستم راهنمای تعاملی و متمرکز بخش‌ها (Help System)
+- دکمه‌های ظریف راهنما (`HelpButton`) در تمامی ویجت‌ها و کارت‌های داشبورد با آیکون محلی `info-circle`.
+- ساختار متمرکز داده‌های راهنما در [resources/js/config/helpContent.js](file:///d:/crmwp/resources/js/config/helpContent.js) با توضیحات عملیاتی پیرامون عملکرد هر بخش، منبع داده‌ها و نحوه استفاده.
+- پاپ‌اور پیشرفته با قابلیت انتقال مستقیم به `document.body` (Teleport) جهت جلوگیری از برش توسط لایه‌های دارای `overflow-hidden`.
+- محاسبه هوشمند کادر صفحه (Viewport) جهت جلوگیری از خروج در موبایل و تبلت، با پشتیبانی از کلید `Escape` و کلیک خارج.
+
+### ۳. سیستم حمایت مالی اختیاری از توسعه‌دهنده (Donate System)
+- دکمه مینیمال و جذاب «♡ حمایت» در هدر سامانه و در مجاورت مرکز اعلان‌ها (`[Donate] [Notifications]`).
+- مودال محترمانه و حرفه‌ای حاوی اطلاعات توسعه‌دهنده بدون لینک‌ها یا درگاه‌های ساختگی.
+- دریافت امن داده‌ها از نقطه انتهایی بک‌اند (`GET /api/v1/system/donate`) به عنوان Source of Truth.
+- قابلیت کپی سریع شماره کارت در کلیپ‌بورد با بازخورد بصری و پشتیبانی از مرورگرهای مختلف.
+- پیکربندی آسان از طریق فایل محیطی سرور:
+  ```ini
+  DONATE_RECIPIENT_NAME="کمک مالی به حسین محمدپور"
+  DONATE_CARD_NUMBER="6219861931965403"
+  DONATE_EMAIL="info@hosseinmohammadpour.ir"
+  DONATE_GITHUB="satinbest/crmwp"
+  ```
+
+### ۴. بهینه‌سازی و پولیش هدر سامانه
+- حذف خط عمودی مزاحم (Border Divider) کنار آواتار و نام کاربر.
+- هماهنگ‌سازی فواصل، اندازه آیکون‌ها و ترازبندی عمودی المان‌ها.
+- ایزولاسیون کامل آواتار با استفاده از نمادهای وکتور داخلی پروژه بدون هرگونه وابستگی به Gravatar.
+
+### ۵. کش شیء (Object Cache) و پایداری شبکه
+- پشتیبانی کامل از اتصالات TCP و Unix Domain Socket در Memcached.
+- تست واقعی اتصال شامل چرخه ۴ مرحله‌ای: `Set -> Get -> Verify -> Delete`.
+- محاسبه صحیح و دقیق ضریب اصابت (Hit Ratio) با وضعیت «بدون داده» برای مواردی که هنوز ترددی ثبت نشده است.
+- استقلال کامل کش فایل و کش شیء.
+
+---
+
+## متغیرهای محیطی مورد نیاز (Environment Variables Template)
+
+```ini
+# Application
+APP_NAME="WooCommerce Management & CRM"
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://crm.yourdomain.com
+APP_SECRET=strong_random_secret_at_least_32_characters
+ENCRYPTION_KEY=64_character_hex_encryption_key
+CRON_SECRET=strong_random_secret_for_cron
+APP_VERSION=1.1.0
+
+# Database
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=your_db_name
+DB_USERNAME=your_db_user
+DB_PASSWORD="your_db_password"
+DB_CHARSET=utf8mb4
+DB_COLLATION=utf8mb4_unicode_ci
+
+# Session
+SESSION_LIFETIME=7200
+SESSION_SECURE=true
+SESSION_SAME_SITE=Lax
+
+# Localization
+TIMEZONE=Asia/Tehran
+LOCALE=fa
+
+# Voluntary Developer Donation (Optional)
+DONATE_RECIPIENT_NAME="کمک مالی به حسین محمدپور"
+DONATE_CARD_NUMBER="6219861931965403"
+DONATE_EMAIL="info@hosseinmohammadpour.ir"
+DONATE_GITHUB="satinbest/crmwp"
+```
 
 ---
 
@@ -45,47 +135,10 @@ Composer Runtime: NOT REQUIRED
 
 ---
 
-## جدول وضعیت وابستگی‌های زمان اجرا (Runtime Dependencies)
-
-| وابستگی | وضعیت در پروداکشن | توضیح فنی |
-| :--- | :--- | :--- |
-| **Node.js / npm** | ❌ غیرضروری (Zero Runtime Dependency) | تمامی مراحل ساخت فرانت‌اند توسط Vite در مرحله بیلد انجام شده و خروجی در `public/assets/` قرار گرفته است. |
-| **Composer** | ❌ غیرضروری در سرور | پوشه `vendor/` با کلاس‌مپ بهینه‌شده تولید شده و همراه بسته عرضه می‌شود. |
-| **Redis / Memcached** | ❌ غیرضروری | موتور کش داخلی سریع و مبتنی بر فایل در مسیر `storage/cache/` فعال است. |
-| **Docker / Supervisor** | ❌ غیرضروری | سامانه سبک و بدون نیاز به پردازشگر دائمی اجرا می‌شود. |
-| **دسترسی SSH / CLI** | ❌ اختیاری (غیرضروری) | راه‌اندازی از طریق مرورگر (Web Installer) و وب‌کرون کاملاً پشتیبانی می‌شود. |
-| **CDN یا اینترنت خارجی برای UI** | ❌ کاملاً ایزوله (100% Offline) | فونت Vazirmatn و آیکون‌های وکتور محلی هستند. |
-
----
-
-## مراحل ساخت و کامپایل بسته (Build Pipeline)
-
-۱. **کامپایل فرانت‌اند (Frontend Build)**:
-   ```bash
-   npm run build
-   ```
-   * ایجاد ۹ وزن فونت استاندارد Vazirmatn در فرمت بهینه `woff2` داخل `public/assets/`.
-   * خروجی فشرده و تفکیک‌شده به چانک‌های مجزا بدون Source Mapهای حساس.
-   * حذف کامل کلاس‌های `font-mono` و استانداردسازی تایپوگرافی با اعداد طبیعی فارسی.
-
-۲. **بهینه‌سازی Autoload بک‌اند**:
-   ```bash
-   composer dump-autoload -o --no-dev
-   ```
-   * تولید کلاس‌مپ بهینه از کلیه کلاس‌های پروژه.
-
-۳. **تولید بسته انتشار نهایی**:
-   ```bash
-   php build_release.php
-   ```
-   * بسته‌بندی در قالب فایل `CRM-Production-Release-1.0.1.zip`.
-
----
-
 ## ساختار بسته نهایی (Release Contents)
 
 ```text
-CRM-Production-Release-1.0.1.zip
+CRM-Production-Release-1.1.0.zip
 ├── .htaccess                     # هدایت درخواست‌ها به public/ و محافظت از فایل‌های محرمانه
 ├── .env.example                  # الگوی متغیرهای محیطی پروداکشن (فاقد هرگونه اطلاعات واقعی)
 ├── cron.php                      # ورودی اجرای دوره‌ای پس‌زمینه (سازگار با CLI و وب‌توکن)
@@ -96,14 +149,14 @@ CRM-Production-Release-1.0.1.zip
 ├── SECURITY.md                   # مستندات و استانداردهای امنیتی
 ├── RELEASE-MANIFEST.md           # همین مانیفست تحویل
 ├── RELEASE_MANIFEST.json         # متادیتای ساختاریافته بسته
-├── RELEASE_NOTES.md              # یادداشت‌های تغییرات نسخه
+├── CHANGELOG.md                  # گزارش تغییرات تفصیلی نسخه‌ها
 ├── DEPLOYMENT.md                 # راهنمای استقرار در سرور و هاست
 ├── BACKUP.md                     # راهنمای پشتیبان‌گیری
 ├── BACKUP_RESTORE.md             # راهنمای بازیابی اضطراری
 ├── PRODUCTION_CHECKLIST.md       # چک‌لیست قبل و بعد از راه‌اندازی
 ├── app/                          # کنترلرها، سرویس‌ها، مدل‌ها و پایگاه داده
 │   └── Database/
-│       ├── Migrations/           # ۱۸ مایگریشن ساختار دیتابیس
+│       ├── Migrations/           # ۱۹ مایگریشن ساختار دیتابیس
 │       └── Seeders/              # اطلاعات پایه نقش‌ها و دسترسی‌ها (بدون اطلاعات پروداکشن)
 ├── config/                       # پیکربندی‌های سامانه (app, database, auth, cors, ...)
 ├── routes/                       # تعاریف مسیرهای API و وب
@@ -124,11 +177,25 @@ CRM-Production-Release-1.0.1.zip
 
 ## اقلام حذف‌شده و استثنا شده از انتشار (Exclusions)
 
-موارد زیر به دلیل امنیت و عدم نیاز در محیط پروداکشن، به صورت قطعی از فایل بسته ZIP حذف شده‌اند:
 * `.git/` و تاریخچه مخزن
 * `node_modules/` و پکیج‌های توسعه‌ای Node
 * `tests/` و اسکریپت‌های تست واحد و یکپارچگی
-* `.env` واقعی حاوی اطلاعات محیط توسعه
-* `storage/installed.lock` (قفل نصب سیستم برای امکان اجرای Web Installer روی هاست نو)
-* لاگ‌ها و کش‌های محیط توسعه (`storage/logs/*.log`, `storage/cache/*`, `storage/framework/cache/*`)
+* `.env` حاوی اطلاعات محلی یا اسرار سرور توسعه
+* `storage/installed.lock` (امکان اجرای Web Installer روی هاست جدید)
+* لاگ‌ها و فایل‌های موقت (`storage/logs/*.log`, `storage/cache/*`, `storage/framework/cache/*`)
 * فایل‌های ابزاری توسعه و اسکریپت‌های موقت (`scratch/`)
+
+---
+
+## چک‌لیست استقرار نهایی (Production Checklist)
+
+1. [x] بیلد فرانت‌اند و استایل‌ها با Vite به شکل بهینه و مینیمایز شده در `public/assets/`.
+2. [x] کلیه فونت‌های وزیرمتن (۹ وزن استاندارد) به صورت WOFF2 محلی قرار دارند.
+3. [x] آیکون‌ها از Iconsax محلی بارگذاری می‌شوند.
+4. [x] هیچ تماسی با Gravatar یا CDNهای خارجی در شبکه مرورگر ثبت نمی‌شود.
+5. [x] شماره کارت و اطلاعات Donate به شکل امن و از طریق بک‌اند کنترل می‌شود.
+6. [x] خط عمودی اضافی کنار آواتار در هدر به طور کامل حذف شده است.
+7. [x] سیستم Help برای تمامی بخش‌های داشبورد پیاده‌سازی شده و عملکرد آن تأیید شده است.
+8. [x] ماژول کش شیء اتصالات TCP و Unix Socket را با تست واقعی پشتیبانی می‌کند.
+9. [x] هیچ سکرت یا کلید معتبر توسعه در ریپازیتوری یا بسته انتشار باقی نمانده است.
+10. [x] فایل انتشار ZIP با ساختار مستقل و استاندارد آماده بهره‌برداری است.

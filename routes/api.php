@@ -26,6 +26,8 @@ $router->group(['prefix' => '/api/v1'], function (Router $api) {
     $api->get('/system/health', [SystemController::class, 'health']);
     $api->get('/system/about', [SystemController::class, 'about']);
     $api->get('/about', [SystemController::class, 'about']);
+    $api->get('/system/donate', [SystemController::class, 'donateInfo']);
+    $api->get('/donate', [SystemController::class, 'donateInfo']);
     $api->get('/system/cache', [SystemController::class, 'cacheInfo'], [\App\Middleware\AuthMiddleware::class]);
     $api->post('/system/cache/test', [SystemController::class, 'testCacheConnection'], [\App\Middleware\AuthMiddleware::class]);
     $api->post('/system/cache/flush', [SystemController::class, 'flushCache'], [\App\Middleware\AuthMiddleware::class]);

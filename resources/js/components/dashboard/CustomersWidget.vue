@@ -2,21 +2,24 @@
   <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col justify-between transition-all">
     <!-- Header with Tabs -->
     <div class="flex items-center justify-between gap-3 mb-4">
-      <div class="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-bold">
-        <button
-          @click="activeTab = 'recent'"
-          class="px-3 py-1.5 rounded-lg transition-all"
-          :class="activeTab === 'recent' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'"
-        >
-          مشتریان جدید
-        </button>
-        <button
-          @click="activeTab = 'top'"
-          class="px-3 py-1.5 rounded-lg transition-all"
-          :class="activeTab === 'top' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'"
-        >
-          مشتریان برتر
-        </button>
+      <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-bold">
+          <button
+            @click="activeTab = 'recent'"
+            class="px-3 py-1.5 rounded-lg transition-all"
+            :class="activeTab === 'recent' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'"
+          >
+            مشتریان جدید
+          </button>
+          <button
+            @click="activeTab = 'top'"
+            class="px-3 py-1.5 rounded-lg transition-all"
+            :class="activeTab === 'top' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'"
+          >
+            مشتریان برتر
+          </button>
+        </div>
+        <HelpButton help-key="dashboard_customers_widget" size="14" />
       </div>
 
       <router-link
@@ -106,6 +109,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import Iconsax from '@/components/icons/Iconsax.vue';
+import HelpButton from '@/components/ui/HelpButton.vue';
 import { formatNumber, formatCurrency } from '@/utils/formatters';
 
 const props = defineProps({

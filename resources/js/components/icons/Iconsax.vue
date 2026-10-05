@@ -11,8 +11,27 @@
     stroke-linecap="round"
     stroke-linejoin="round"
   >
+    <!-- Heart / Donate -->
+    <g v-if="name === 'heart'">
+      <path d="M12.62 20.81C12.28 20.93 11.72 20.93 11.38 20.81C8.48 19.82 2 15.69 2 8.69C2 5.6 4.49 3.1 7.56 3.1C9.38 3.1 10.99 3.98 12 5.34C13.01 3.98 14.63 3.1 16.44 3.1C19.51 3.1 22 5.6 22 8.69C22 15.69 15.52 19.82 12.62 20.81Z" />
+    </g>
+
+    <!-- Info Circle / Help -->
+    <g v-else-if="name === 'info-circle' || name === 'info'">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="16" x2="12" y2="11" />
+      <line x1="12" y1="8" x2="12.01" y2="8" stroke-width="2" />
+    </g>
+
+    <!-- Question Circle / Help -->
+    <g v-else-if="name === 'question' || name === 'message-question'">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.09 9C9.3251 8.33167 9.78915 7.76811 10.4 7.39913C11.0108 7.03015 11.7289 6.87899 12.4372 6.97046C13.1455 7.06192 13.7995 7.39049 14.29 7.90198C14.7806 8.41346 15.0777 9.07634 15.13 9.78C15.13 12 12 13 12 13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" stroke-width="2" />
+    </g>
+
     <!-- Profile Circle / Avatar -->
-    <g v-if="name === 'profile-circle' || name === 'user-circle'">
+    <g v-else-if="name === 'profile-circle' || name === 'user-circle'">
       <circle cx="12" cy="12" r="10" />
       <circle cx="12" cy="10" r="3" />
       <path d="M7 18.5C7.8 16.5 9.7 15.2 12 15.2C14.3 15.2 16.2 16.5 17 18.5" />
@@ -39,6 +58,18 @@
       <circle cx="8" cy="15" r="1" fill="currentColor" />
       <circle cx="12" cy="15" r="1" fill="currentColor" />
       <circle cx="16" cy="15" r="1" fill="currentColor" />
+    </g>
+
+    <!-- Copy -->
+    <g v-else-if="name === 'copy' || name === 'document-copy'">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </g>
+
+    <!-- Tick Circle / Check -->
+    <g v-else-if="name === 'tick-circle' || name === 'check'">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M8.5 12.5L10.5 14.5L15.5 9.5" />
     </g>
 
     <!-- Money Recive / Income -->

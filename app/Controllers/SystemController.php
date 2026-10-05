@@ -592,5 +592,25 @@ class SystemController extends BaseController
             'timestamp' => date('c'),
         ]);
     }
+
+    /**
+     * GET /api/v1/system/donate
+     * Returns sanitized developer donation configuration from backend source of truth
+     */
+    public function donateInfo(Request $request): Response
+    {
+        $donate = Config::get('app.donate', []);
+
+        $rawCard = (string)($donate['card_number'] ?? '');
+        $cleanCard = preg_replace('/\D/', '', $rawCard);
+
+        return $this->success([
+            'recipient_name' => $donate['recipient_name'] ?? 'کمک مالی به حسین محمدپور',
+            'card_number' => $cleanCard,
+            'email' => $donate['email'] ?? 'info@hosseinmohammadpour.ir',
+            'github' => $donate['github'] ?? 'satinbest/crmwp',
+            'has_card' => !empty($cleanCard),
+        ]);
+    }
 }
 

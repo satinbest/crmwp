@@ -5,6 +5,7 @@
       <div class="flex items-center gap-2">
         <span class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></span>
         <h3 class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">تفکیک وضعیت سفارش‌ها</h3>
+        <HelpButton help-key="dashboard_orders_status" size="14" />
       </div>
       <router-link
         to="/orders"
@@ -82,6 +83,7 @@
 <script setup>
 import { computed } from 'vue';
 import Iconsax from '@/components/icons/Iconsax.vue';
+import HelpButton from '@/components/ui/HelpButton.vue';
 import { formatNumber, formatPercent } from '@/utils/formatters';
 
 const props = defineProps({

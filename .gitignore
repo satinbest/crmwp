@@ -19,6 +19,7 @@ cookie.txt
 /public/assets/
 /public/index.html
 /index.html.bak
+*.zip
 
 # Storage (runtime)
 /storage/logs/*

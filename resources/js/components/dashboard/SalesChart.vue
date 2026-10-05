@@ -6,6 +6,7 @@
         <div class="flex items-center gap-2">
           <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500/50"></span>
           <h3 class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">روند فروش</h3>
+          <HelpButton help-key="dashboard_sales_chart" size="14" />
           <span v-if="periodLabel" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40">
             {{ periodLabel }}
           </span>
@@ -209,6 +210,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import Iconsax from '@/components/icons/Iconsax.vue';
+import HelpButton from '@/components/ui/HelpButton.vue';
 import { formatNumber, formatCurrency, toPersianDigits, formatDate } from '@/utils/formatters';
 
 const props = defineProps({

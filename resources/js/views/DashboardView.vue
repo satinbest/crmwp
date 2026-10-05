@@ -167,7 +167,10 @@
       <!-- KPI 1: Total Sales -->
       <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 shadow-sm flex flex-col justify-between transition-all hover:shadow-md">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">فروش کل</span>
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">فروش کل</span>
+            <HelpButton help-key="dashboard_sales" size="14" />
+          </div>
           <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs">
             <Iconsax name="money-recive" size="20" />
           </div>
@@ -199,7 +202,10 @@
       <!-- KPI 2: Total Orders -->
       <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 shadow-sm flex flex-col justify-between transition-all hover:shadow-md">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">تعداد سفارش‌ها</span>
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">تعداد سفارش‌ها</span>
+            <HelpButton help-key="dashboard_orders" size="14" />
+          </div>
           <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-xs">
             <Iconsax name="bag-2" size="20" />
           </div>
@@ -231,7 +237,10 @@
       <!-- KPI 3: Total Customers -->
       <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 shadow-sm flex flex-col justify-between transition-all hover:shadow-md">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">کل مشتریان</span>
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">کل مشتریان</span>
+            <HelpButton help-key="dashboard_customers" size="14" />
+          </div>
           <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center shadow-xs">
             <Iconsax name="user" size="20" />
           </div>
@@ -256,7 +265,10 @@
       <!-- KPI 4: Total Products -->
       <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 shadow-sm flex flex-col justify-between transition-all hover:shadow-md">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">تنوع محصولات</span>
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">تنوع محصولات</span>
+            <HelpButton help-key="dashboard_products" size="14" />
+          </div>
           <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-xs">
             <Iconsax name="box" size="20" />
           </div>
@@ -284,12 +296,15 @@
       </div>
     </div>
 
-    <!-- Secondary KPI Summary Pills (Pending, Processing, Completed) -->
+    <!-- Secondary KPI Summary Pills (Pending, Processing, Completed, Low Stock) -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <!-- Pending Orders -->
       <div class="p-3.5 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 flex items-center justify-between">
         <div>
-          <div class="text-[11px] font-semibold text-amber-800 dark:text-amber-300">در انتظار پرداخت / بررسی</div>
+          <div class="flex items-center gap-1">
+            <span class="text-[11px] font-semibold text-amber-800 dark:text-amber-300">در انتظار پرداخت / بررسی</span>
+            <HelpButton help-key="dashboard_pending_orders" size="13" />
+          </div>
           <div class="text-lg font-black text-amber-700 dark:text-amber-400 mt-0.5">
             {{ formatNumber(kpis.pending_orders) }}
           </div>
@@ -302,7 +317,10 @@
       <!-- Processing Orders -->
       <div class="p-3.5 rounded-2xl bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-900/40 flex items-center justify-between">
         <div>
-          <div class="text-[11px] font-semibold text-blue-800 dark:text-blue-300">در حال پردازش و بسته‌بندی</div>
+          <div class="flex items-center gap-1">
+            <span class="text-[11px] font-semibold text-blue-800 dark:text-blue-300">در حال پردازش و بسته‌بندی</span>
+            <HelpButton help-key="dashboard_processing_orders" size="13" />
+          </div>
           <div class="text-lg font-black text-blue-700 dark:text-blue-400 mt-0.5">
             {{ formatNumber(kpis.processing_orders) }}
           </div>
@@ -315,7 +333,10 @@
       <!-- Completed Orders -->
       <div class="p-3.5 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 flex items-center justify-between">
         <div>
-          <div class="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300">سفارش‌های تکمیل‌شده</div>
+          <div class="flex items-center gap-1">
+            <span class="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300">سفارش‌های تکمیل‌شده</span>
+            <HelpButton help-key="dashboard_completed_orders" size="13" />
+          </div>
           <div class="text-lg font-black text-emerald-700 dark:text-emerald-400 mt-0.5">
             {{ formatNumber(kpis.completed_orders) }}
           </div>
@@ -328,7 +349,10 @@
       <!-- Inventory Low Stock Alert -->
       <div class="p-3.5 rounded-2xl bg-rose-50/60 dark:bg-rose-950/20 border border-rose-200/60 dark:border-rose-900/40 flex items-center justify-between">
         <div>
-          <div class="text-[11px] font-semibold text-rose-800 dark:text-rose-300">کالاهای نیازمند تأمین</div>
+          <div class="flex items-center gap-1">
+            <span class="text-[11px] font-semibold text-rose-800 dark:text-rose-300">کالاهای نیازمند تأمین</span>
+            <HelpButton help-key="dashboard_low_stock_kpi" size="13" />
+          </div>
           <div class="text-lg font-black text-rose-700 dark:text-rose-400 mt-0.5">
             {{ formatNumber(kpis.low_stock_count) }}
           </div>
@@ -399,6 +423,7 @@ import apiClient from '@/api/client';
 import Iconsax from '@/components/icons/Iconsax.vue';
 import StoreSwitcher from '@/components/StoreSwitcher.vue';
 import RefreshButton from '@/components/ui/RefreshButton.vue';
+import HelpButton from '@/components/ui/HelpButton.vue';
 import SalesChart from '@/components/dashboard/SalesChart.vue';
 import OrdersStatusChart from '@/components/dashboard/OrdersStatusChart.vue';
 import CustomersWidget from '@/components/dashboard/CustomersWidget.vue';

@@ -101,7 +101,7 @@ echo "\n";
 echo "3. Central Application Versioning:\n";
 $appConfig = require __DIR__ . '/../config/app.php';
 assertTest('Application version is set centrally in config/app.php', !empty($appConfig['version']));
-assertTest('Application version is 1.0.1', $appConfig['version'] === '1.0.1');
+assertTest('Application version is 1.1.0', $appConfig['version'] === '1.1.0');
 echo "\n";
 
 // 4. Installer Environment Check API

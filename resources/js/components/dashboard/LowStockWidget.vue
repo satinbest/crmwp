@@ -5,6 +5,7 @@
       <div class="flex items-center gap-2">
         <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm shadow-amber-500/50"></span>
         <h3 class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">محصولات کم‌موجودی و ناموجود</h3>
+        <HelpButton help-key="dashboard_low_stock_widget" size="14" />
         <span v-if="items.length > 0" class="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300">
           {{ formatNumber(items.length) }} کالا
         </span>
@@ -121,6 +122,7 @@
 
 <script setup>
 import Iconsax from '@/components/icons/Iconsax.vue';
+import HelpButton from '@/components/ui/HelpButton.vue';
 import { formatNumber, formatCurrency } from '@/utils/formatters';
 
 const props = defineProps({

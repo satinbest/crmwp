@@ -331,11 +331,14 @@
             <Iconsax :name="themeStore.isDark ? 'sun' : 'moon'" size="20" />
           </button>
 
+          <!-- Donate to Project Button (adjacent to notifications) -->
+          <DonateButton />
+
           <!-- Notification Bell & Center Dropdown -->
           <NotificationDropdown />
 
-          <!-- User Role Badge -->
-          <div class="hidden sm:flex items-center gap-2 pl-2 border-r border-slate-200 dark:border-slate-800 mr-2">
+          <!-- User Role Badge (Cleaned: removed intrusive vertical border) -->
+          <div class="hidden lg:flex items-center">
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/50">
               {{ primaryRoleName }}
             </span>
@@ -344,8 +347,9 @@
           <!-- Header Profile Quick Link -->
           <router-link
             to="/settings/profile"
-            class="flex items-center gap-2 p-1 rounded-full hover:ring-2 hover:ring-indigo-500/20 transition-all"
-            title="پروفایل من"
+            class="flex items-center gap-2 p-0.5 rounded-full hover:ring-2 hover:ring-indigo-500/20 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            title="مشاهده پروفایل کاربری"
+            aria-label="پروفایل کاربری"
           >
             <div
               v-if="hasInternalAvatar"
@@ -386,6 +390,7 @@ import Iconsax from '@/components/icons/Iconsax.vue';
 import CommandPalette from '@/components/ui/CommandPalette.vue';
 import ToastContainer from '@/components/ui/ToastContainer.vue';
 import NotificationDropdown from '@/components/ui/NotificationDropdown.vue';
+import DonateButton from '@/components/ui/DonateButton.vue';
 import StoreSwitcher from '@/components/StoreSwitcher.vue';
 
 const route = useRoute();

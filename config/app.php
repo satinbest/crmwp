@@ -1,7 +1,7 @@
 <?php
 
 if (!defined('CRM_APP_VERSION')) {
-    define('CRM_APP_VERSION', '1.0.1');
+    define('CRM_APP_VERSION', '1.1.0');
 }
 
 return [
@@ -17,6 +17,12 @@ return [
         'name' => getenv('DEVELOPER_NAME') ?: 'تیم توسعه CRMWP',
         'website' => getenv('DEVELOPER_WEBSITE') ?: '',
         'email' => getenv('DEVELOPER_EMAIL') ?: '',
+    ],
+    'donate' => [
+        'recipient_name' => getenv('DONATE_RECIPIENT_NAME') ?: 'کمک مالی به حسین محمدپور',
+        'card_number' => getenv('DONATE_CARD_NUMBER') ?: '',
+        'email' => getenv('DONATE_EMAIL') ?: 'info@hosseinmohammadpour.ir',
+        'github' => getenv('DONATE_GITHUB') ?: 'satinbest/crmwp',
     ],
 ];
 

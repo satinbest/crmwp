@@ -5,6 +5,7 @@
       <div class="flex items-center gap-2">
         <span class="w-2.5 h-2.5 rounded-full bg-violet-500 shadow-sm shadow-violet-500/50"></span>
         <h3 class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">فعالیت‌های اخیر فروشگاه و CRM</h3>
+        <HelpButton help-key="dashboard_recent_activities" size="14" />
       </div>
 
       <router-link
@@ -78,6 +79,7 @@
 
 <script setup>
 import Iconsax from '@/components/icons/Iconsax.vue';
+import HelpButton from '@/components/ui/HelpButton.vue';
 import { formatRelativeTime } from '@/utils/formatters';
 
 const props = defineProps({
