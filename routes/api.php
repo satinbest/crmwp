@@ -551,6 +551,11 @@ $router->group(['prefix' => '/api/v1'], function (Router $api) {
         AuthMiddleware::class,
     ]);
 
+    // Dashboard Analytics & Store Statistics
+    $api->get('/dashboard/stats', [\App\Controllers\DashboardController::class, 'stats'], [
+        AuthMiddleware::class,
+    ]);
+
     // CRM Workspace (Phase 9)
     $api->get('/crm/summary', [\App\Controllers\CrmController::class, 'summary'], [AuthMiddleware::class]);
     $api->get('/crm/search', [\App\Controllers\CrmController::class, 'search'], [AuthMiddleware::class]);

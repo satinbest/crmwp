@@ -250,6 +250,58 @@ export function formatPercent(val, decimals = 0, fallback = '۰٪') {
   return `${formatNumber(fixed)}٪`;
 }
 
+/**
+ * Formats full Persian date with weekday, day, month name, and year.
+ * Example: "دوشنبه ۱۴ مهر ۱۴۰۵"
+ */
+export function formatFullJalaliDayDate(dateInput, timezone = 'Asia/Tehran', fallback = '—') {
+  const d = parseDate(dateInput) || new Date();
+  try {
+    if (Intl && Intl.DateTimeFormat) {
+      const formatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+        timeZone: timezone || 'Asia/Tehran',
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+      return formatter.format(d);
+    }
+  } catch (e) {
+    // Fallback
+  }
+
+  const daysOfWeek = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه', 'شنبه'];
+  const weekday = daysOfWeek[d.getDay()];
+  const formatted = formatDate(d, 'text', fallback);
+  return `${weekday} ${formatted}`;
+}
+
+/**
+ * Formats live clock time HH:mm in Persian digits.
+ * Example: "۰۰:۴۲"
+ */
+export function formatLiveClock(dateInput, timezone = 'Asia/Tehran') {
+  const d = parseDate(dateInput) || new Date();
+  try {
+    if (Intl && Intl.DateTimeFormat) {
+      const formatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+        timeZone: timezone || 'Asia/Tehran',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+      return formatter.format(d);
+    }
+  } catch (e) {
+    // Fallback
+  }
+
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  return toPersianDigits(`${h}:${m}`);
+}
+
 export default {
   toPersianDigits,
   formatDate,
@@ -260,4 +312,6 @@ export default {
   formatCurrency,
   formatPrice,
   formatPercent,
+  formatFullJalaliDayDate,
+  formatLiveClock,
 };
