@@ -296,14 +296,18 @@ class Cache
     {
         $driver = self::getDriver();
         $total = self::$hits + self::$misses;
-        $hitRatio = $total > 0 ? round((self::$hits / $total) * 100, 2) : 0.0;
+        $hasData = $total > 0;
+        $hitRatio = $hasData ? round((self::$hits / $total) * 100, 1) : null;
 
         return [
             'available' => $driver->isAvailable(),
             'driver' => $driver->getName(),
             'hits' => self::$hits,
             'misses' => self::$misses,
+            'total' => $total,
+            'has_data' => $hasData,
             'hit_ratio_percent' => $hitRatio,
+            'hit_ratio_label' => $hasData ? "{$hitRatio}٪" : 'بدون داده',
         ];
     }
 }

@@ -64,7 +64,7 @@
         <div class="flex items-center gap-3 min-w-0">
           <!-- Avatar / Initial -->
           <div
-            v-if="c.avatar_url"
+            v-if="c.avatar_url && !c.avatar_url.includes('gravatar.com')"
             class="w-9 h-9 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 shrink-0"
           >
             <img :src="c.avatar_url" alt="" class="w-full h-full object-cover" />

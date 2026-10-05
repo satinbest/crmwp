@@ -1,17 +1,31 @@
 <template>
   <div class="space-y-6">
-    <!-- 1. Header Bar: Welcome, Live Clock & Jalali Date, Store Selector, Period Filter -->
-    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl p-5 sm:p-6 shadow-sm">
-      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-        <!-- User Greeting & Live Date/Time -->
+    <!-- 1. Modern SaaS Header Bar: Welcome, Avatar, Live Jalali Date & Clock, Store Selector, Period Filter -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl p-5 sm:p-6 shadow-sm transition-all">
+      <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
+        <!-- User Greeting & Avatar & Live Date/Time -->
         <div class="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-500 text-white flex items-center justify-center font-black text-xl shadow-md shadow-indigo-500/20 shrink-0">
-            <Iconsax name="shop" size="24" />
+          <!-- Internal User Avatar (No Gravatar, Iconsax ProfileCircle Fallback) -->
+          <div class="relative shrink-0">
+            <div
+              v-if="hasInternalAvatar"
+              class="w-12 h-12 rounded-full overflow-hidden border-2 border-indigo-500/20 shadow-sm"
+            >
+              <img :src="authStore.user.avatar" alt="Avatar" class="w-full h-full object-cover" />
+            </div>
+            <div
+              v-else
+              class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-slate-200/80 dark:border-slate-700/80 shadow-xs"
+              title="آواتار کاربر"
+            >
+              <Iconsax name="profile-circle" size="28" />
+            </div>
+            <span class="absolute bottom-0 left-0 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"></span>
           </div>
 
           <div>
-            <div class="flex items-center gap-2">
-              <h1 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h1 class="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                 خوش آمدید، {{ userDisplayName }}
               </h1>
               <span
@@ -22,26 +36,32 @@
               </span>
             </div>
 
-            <!-- Live Clock & Jalali Date -->
-            <div class="flex items-center gap-3 mt-1.5 text-slate-500 dark:text-slate-400">
-              <!-- Live Time (Large) -->
-              <div class="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200 text-sm sm:text-base dir-ltr">
-                <Iconsax name="clock" size="16" class="text-indigo-500" />
-                <span>{{ liveTimeString }}</span>
+            <!-- Compact Date & Live Clock Row -->
+            <div class="flex flex-wrap items-center gap-3 sm:gap-4 mt-1.5 text-slate-500 dark:text-slate-400 text-xs sm:text-sm">
+              <!-- Calendar Date -->
+              <div class="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
+                <Iconsax name="calendar-2" size="17" class="text-indigo-500 dark:text-indigo-400 shrink-0" />
+                <span>امروز، {{ liveDateString }}</span>
               </div>
 
-              <span class="text-slate-300 dark:text-slate-700">•</span>
+              <span class="hidden sm:inline text-slate-300 dark:text-slate-700">•</span>
 
-              <!-- Jalali Full Date -->
-              <div class="text-xs sm:text-sm font-medium">
-                {{ liveDateString }}
+              <!-- Live Clock (Slightly larger & prominent) -->
+              <div class="flex items-center gap-1.5 text-slate-900 dark:text-slate-100 font-black text-sm sm:text-base dir-ltr">
+                <Iconsax name="clock-1" size="17" class="text-indigo-500 dark:text-indigo-400 shrink-0" />
+                <span class="tracking-wider">{{ liveTimeString }}</span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Actions: Store Selector & Period Filter & Refresh -->
+        <!-- Actions: Store Selector & Period Filter & Refresh Button -->
         <div class="flex flex-wrap items-center gap-2.5">
+          <!-- Store Selector (if multi-store) -->
+          <div v-if="storeContext.stores.length > 1" class="shrink-0">
+            <StoreSwitcher />
+          </div>
+
           <!-- Time Range Selector -->
           <div class="flex items-center bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 text-xs font-semibold">
             <button
@@ -377,6 +397,7 @@ import { useStoreContext } from '@/stores/storeContext';
 import { useNotificationStore } from '@/stores/notification';
 import apiClient from '@/api/client';
 import Iconsax from '@/components/icons/Iconsax.vue';
+import StoreSwitcher from '@/components/StoreSwitcher.vue';
 import RefreshButton from '@/components/ui/RefreshButton.vue';
 import SalesChart from '@/components/dashboard/SalesChart.vue';
 import OrdersStatusChart from '@/components/dashboard/OrdersStatusChart.vue';
@@ -413,6 +434,13 @@ const liveDateString = computed(() => {
 
 const userDisplayName = computed(() => {
   return authStore.user?.full_name || authStore.user?.username || 'مدیر گرامی';
+});
+
+const hasInternalAvatar = computed(() => {
+  const av = authStore.user?.avatar;
+  if (!av || typeof av !== 'string') return false;
+  if (av.includes('gravatar.com')) return false;
+  return av.startsWith('/storage/') || av.startsWith('data:image/');
 });
 
 // Period Filter Options

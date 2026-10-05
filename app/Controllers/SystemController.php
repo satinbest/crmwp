@@ -277,13 +277,17 @@ class SystemController extends BaseController
         $redisPort = (int)\App\Support\Env::get('REDIS_PORT', 6379);
         $redisDb = (int)\App\Support\Env::get('REDIS_DB', 0);
 
+        $hasMemcachedExt = extension_loaded('memcached');
+        $hasMemcacheExt = extension_loaded('memcache');
         $extensions = [
-            'memcached' => extension_loaded('memcached'),
+            'memcached' => $hasMemcachedExt,
+            'memcache' => $hasMemcacheExt,
+            'memcached_any' => $hasMemcachedExt || $hasMemcacheExt,
             'redis' => extension_loaded('redis'),
             'apcu' => extension_loaded('apcu'),
         ];
 
-        // Safe status string
+        // Overall status
         $status = 'disabled';
         if ($isAvailable) {
             $status = 'connected';
@@ -296,16 +300,18 @@ class SystemController extends BaseController
         // Calculate file storage size if file driver
         $fileStorageSize = 0;
         $fileCount = 0;
-        if ($activeDriverName === 'file') {
-            $cacheDir = dirname(__DIR__, 2) . '/storage/framework/cache';
-            if (is_dir($cacheDir)) {
-                $files = glob($cacheDir . '/*.cache') ?: [];
-                $fileCount = count($files);
-                foreach ($files as $f) {
-                    $fileStorageSize += (int)@filesize($f);
-                }
+        $cacheDir = dirname(__DIR__, 2) . '/storage/framework/cache';
+        if (is_dir($cacheDir)) {
+            $files = glob($cacheDir . '/*.cache') ?: [];
+            $fileCount = count($files);
+            foreach ($files as $f) {
+                $fileStorageSize += (int)@filesize($f);
             }
         }
+
+        $socketExists = !empty($memcachedSocketPath) && file_exists($memcachedSocketPath);
+        $socketReadable = $socketExists && is_readable($memcachedSocketPath);
+        $socketWritable = $socketExists && is_writable($memcachedSocketPath);
 
         return $this->success([
             'status' => $status,
@@ -313,19 +319,45 @@ class SystemController extends BaseController
             'is_available' => $isAvailable,
             'configured_driver' => $configuredDriver,
             'extensions' => $extensions,
+            'extension_versions' => [
+                'memcached' => $hasMemcachedExt ? phpversion('memcached') : null,
+                'memcache' => $hasMemcacheExt ? phpversion('memcache') : null,
+                'redis' => $extensions['redis'] ? phpversion('redis') : null,
+                'apcu' => $extensions['apcu'] ? phpversion('apcu') : null,
+            ],
+            'system' => [
+                'os_family' => PHP_OS_FAMILY,
+                'php_user' => get_current_user(),
+            ],
             'telemetry' => $stats,
             'storage' => [
                 'file_items_count' => $fileCount,
                 'file_size_bytes' => $fileStorageSize,
                 'file_size_formatted' => $fileStorageSize > 1048576 ? round($fileStorageSize / 1048576, 2) . ' MB' : round($fileStorageSize / 1024, 2) . ' KB',
             ],
+            'drivers_status' => [
+                'file_cache' => [
+                    'active' => true,
+                    'status' => 'healthy',
+                    'label' => 'فعال و آماده',
+                    'items_count' => $fileCount,
+                    'writable' => is_writable($cacheDir) || is_writable(dirname(__DIR__, 2) . '/storage'),
+                ],
+                'object_cache' => [
+                    'connected' => ($activeDriverName === 'memcached' || $activeDriverName === 'redis') && $isAvailable,
+                    'status' => (($activeDriverName === 'memcached' || $activeDriverName === 'redis') && $isAvailable) ? 'connected' : 'disconnected',
+                    'label' => (($activeDriverName === 'memcached' || $activeDriverName === 'redis') && $isAvailable) ? 'متصل و پایدار' : 'اتصال برقرار نیست',
+                ],
+            ],
             'config' => [
                 'memcached' => [
                     'connection_type' => $memcachedConnType,
                     'socket_path' => $memcachedSocketPath,
+                    'socket_exists' => $socketExists,
+                    'socket_accessible' => $socketReadable && $socketWritable,
                     'host' => $memcachedHost,
                     'port' => $memcachedPort,
-                    'supported' => $extensions['memcached'],
+                    'supported' => $extensions['memcached_any'],
                 ],
                 'redis' => [
                     'host' => $redisHost,
@@ -339,7 +371,7 @@ class SystemController extends BaseController
                 ],
                 'file' => [
                     'supported' => true,
-                    'writable' => is_writable(dirname(__DIR__, 2) . '/storage/framework/cache') || is_writable(dirname(__DIR__, 2) . '/storage'),
+                    'writable' => is_writable($cacheDir) || is_writable(dirname(__DIR__, 2) . '/storage'),
                 ],
             ],
         ]);
@@ -351,7 +383,7 @@ class SystemController extends BaseController
      */
     public function testCacheConnection(Request $request): Response
     {
-        $targetDriver = strtolower((string)$request->input('driver', ''));
+        $targetDriver = strtolower((string)$request->input('driver', 'file'));
         $connectionType = strtolower((string)$request->input('connection_type', 'tcp'));
         $socketPath = (string)$request->input('socket_path', '/memcached.sock');
         $host = (string)$request->input('host', '');
@@ -359,136 +391,180 @@ class SystemController extends BaseController
         $password = (string)$request->input('password', '');
         $database = (int)$request->input('database', 0);
 
-        if (str_starts_with($host, '/') || $connectionType === 'socket' || $connectionType === 'unix_socket') {
+        if (str_starts_with($host, '/') || str_starts_with($host, '\\') || $connectionType === 'socket' || $connectionType === 'unix_socket') {
             $connectionType = 'socket';
             if (empty($socketPath) || $socketPath === '/memcached.sock') {
-                $socketPath = str_starts_with($host, '/') ? $host : $socketPath;
+                $socketPath = (str_starts_with($host, '/') || str_starts_with($host, '\\')) ? $host : $socketPath;
             }
         }
 
-        $start = microtime(true);
-        $testKey = 'crmwp_diag_test_' . bin2hex(random_bytes(4));
-        $testValue = ['ping' => 'pong', 'timestamp' => time(), 'test_id' => $testKey];
-
-        /** @var \App\Support\Cache\CacheDriverInterface $driver */
-        $driver = null;
-        $extensionName = '';
-
-        if ($targetDriver === 'memcached') {
-            $extensionName = 'memcached';
-            if (!extension_loaded('memcached')) {
-                return $this->success([
-                    'success' => false,
-                    'driver' => 'memcached',
-                    'connection_type' => $connectionType,
-                    'connection_status' => 'BLOCKED / NOT AVAILABLE',
-                    'extension_installed' => false,
-                    'connected' => false,
-                    'write_ok' => false,
-                    'read_ok' => false,
-                    'delete_ok' => false,
-                    'latency_ms' => 0,
-                    'message' => 'اکستنشن PHP Memcached بر روی سرور نصب یا فعال نیست (BLOCKED / NOT AVAILABLE).',
-                ]);
-            }
+        // Test Memcached with complete diagnostic inspection
+        if ($targetDriver === 'memcached' || $targetDriver === 'memcache') {
             $testHost = !empty($host) ? $host : (string)\App\Support\Env::get('MEMCACHED_HOST', '127.0.0.1');
             $testPort = $port > 0 ? $port : (int)\App\Support\Env::get('MEMCACHED_PORT', 11211);
-            $driver = new \App\Support\Cache\MemcachedCacheDriver($testHost, $testPort, $connectionType, $socketPath);
-        } elseif ($targetDriver === 'redis') {
-            $extensionName = 'redis';
+            $testSocket = !empty($socketPath) ? $socketPath : (string)\App\Support\Env::get('MEMCACHED_SOCKET_PATH', '/memcached.sock');
+
+            $driver = new \App\Support\Cache\MemcachedCacheDriver($testHost, $testPort, $connectionType, $testSocket);
+            $diagResult = $driver->runDiagnosticTest();
+
+            return $this->success($diagResult);
+        }
+
+        // Test File Cache
+        if ($targetDriver === 'file') {
+            $start = microtime(true);
+            $fileDriver = new \App\Support\Cache\FileCacheDriver();
+            $testKey = '__crmwp_file_diag_' . bin2hex(random_bytes(4));
+            $testVal = ['diag' => 'ok', 'time' => time()];
+
+            $writeOk = $fileDriver->set($testKey, $testVal, 10);
+            $readOk = false;
+            if ($writeOk) {
+                $ret = $fileDriver->get($testKey);
+                $readOk = is_array($ret) && isset($ret['diag']) && $ret['diag'] === 'ok';
+            }
+            $deleteOk = $fileDriver->forget($testKey);
+            $hasAfter = $fileDriver->has($testKey);
+            $deleteVerified = $deleteOk && !$hasAfter;
+
+            $latency = round((microtime(true) - $start) * 1000, 2);
+            $allPassed = $writeOk && $readOk && $deleteVerified;
+
+            return $this->success([
+                'success' => $allPassed,
+                'driver' => 'file',
+                'connection_type' => 'local_disk',
+                'connection_status' => $allPassed ? 'CONNECTED' : 'PARTIAL_FAILURE',
+                'extension_installed' => true,
+                'connected' => true,
+                'write_ok' => $writeOk,
+                'read_ok' => $readOk,
+                'delete_ok' => $deleteVerified,
+                'latency_ms' => $latency,
+                'message' => $allPassed
+                    ? "کش دیسک محلی (File Cache) کاملاً سالم و فعال است (تاخیر: {$latency} میلی‌ثانیه)."
+                    : "خطا در تست نوشتن یا خواندن کش دیسک محلی.",
+            ]);
+        }
+
+        // Test Redis
+        if ($targetDriver === 'redis') {
+            $start = microtime(true);
             if (!extension_loaded('redis')) {
                 return $this->success([
                     'success' => false,
                     'driver' => 'redis',
                     'connection_type' => 'tcp',
-                    'connection_status' => 'BLOCKED / NOT AVAILABLE',
+                    'connection_status' => 'NOT_INSTALLED',
                     'extension_installed' => false,
                     'connected' => false,
                     'write_ok' => false,
                     'read_ok' => false,
                     'delete_ok' => false,
-                    'latency_ms' => 0,
-                    'message' => 'اکستنشن PHP Redis بر روی سرور نصب یا فعال نیست (BLOCKED / NOT AVAILABLE).',
+                    'latency_ms' => 0.0,
+                    'message' => 'اکستنشن PHP Redis بر روی سرور نصب نیست.',
                 ]);
             }
+
             $testHost = !empty($host) ? $host : (string)\App\Support\Env::get('REDIS_HOST', '127.0.0.1');
             $testPort = $port > 0 ? $port : (int)\App\Support\Env::get('REDIS_PORT', 6379);
             $testPass = !empty($password) ? $password : \App\Support\Env::get('REDIS_PASSWORD');
             $testDb = $database > 0 ? $database : (int)\App\Support\Env::get('REDIS_DB', 0);
-            $driver = new \App\Support\Cache\RedisCacheDriver($testHost, $testPort, $testPass, $testDb);
-        } elseif ($targetDriver === 'apcu') {
-            $extensionName = 'apcu';
+            $redisDriver = new \App\Support\Cache\RedisCacheDriver($testHost, $testPort, $testPass, $testDb);
+
+            if (!$redisDriver->isAvailable()) {
+                return $this->success([
+                    'success' => false,
+                    'driver' => 'redis',
+                    'connection_type' => 'tcp',
+                    'connection_status' => 'CONNECTION_FAILED',
+                    'extension_installed' => true,
+                    'connected' => false,
+                    'write_ok' => false,
+                    'read_ok' => false,
+                    'delete_ok' => false,
+                    'latency_ms' => round((microtime(true) - $start) * 1000, 2),
+                    'message' => "عدم امکان اتصال به سرور Redis روی {$testHost}:{$testPort}.",
+                ]);
+            }
+
+            $testKey = '__crmwp_redis_diag_' . bin2hex(random_bytes(4));
+            $testVal = ['diag' => 'ok', 'time' => time()];
+            $writeOk = $redisDriver->set($testKey, $testVal, 10);
+            $readOk = false;
+            if ($writeOk) {
+                $ret = $redisDriver->get($testKey);
+                $readOk = is_array($ret) && isset($ret['diag']) && $ret['diag'] === 'ok';
+            }
+            $deleteOk = $redisDriver->forget($testKey);
+            $hasAfter = $redisDriver->has($testKey);
+            $deleteVerified = $deleteOk && !$hasAfter;
+            $latency = round((microtime(true) - $start) * 1000, 2);
+
+            return $this->success([
+                'success' => $writeOk && $readOk && $deleteVerified,
+                'driver' => 'redis',
+                'connection_type' => 'tcp',
+                'connection_status' => 'CONNECTED',
+                'extension_installed' => true,
+                'connected' => true,
+                'write_ok' => $writeOk,
+                'read_ok' => $readOk,
+                'delete_ok' => $deleteVerified,
+                'latency_ms' => $latency,
+                'message' => "تست کامل Redis با موفقیت انجام شد ({$latency} میلی‌ثانیه).",
+            ]);
+        }
+
+        // Test APCu
+        if ($targetDriver === 'apcu') {
+            $start = microtime(true);
             if (!extension_loaded('apcu')) {
                 return $this->success([
                     'success' => false,
                     'driver' => 'apcu',
                     'connection_type' => 'memory',
-                    'connection_status' => 'BLOCKED / NOT AVAILABLE',
+                    'connection_status' => 'NOT_INSTALLED',
                     'extension_installed' => false,
                     'connected' => false,
                     'write_ok' => false,
                     'read_ok' => false,
                     'delete_ok' => false,
-                    'latency_ms' => 0,
-                    'message' => 'اکستنشن PHP APCu بر روی سرور فعال نیست (BLOCKED / NOT AVAILABLE).',
+                    'latency_ms' => 0.0,
+                    'message' => 'اکستنشن PHP APCu بر روی سرور نصب نیست.',
                 ]);
             }
-            $driver = new \App\Support\Cache\ApcuCacheDriver();
-        } else {
-            // Default active driver
-            $driver = \App\Support\Cache::getDriver();
-        }
 
-        if (!$driver->isAvailable()) {
-            $isSocket = ($targetDriver === 'memcached' && $connectionType === 'socket');
-            $failMessage = $isSocket
-                ? "اتصال به Unix Socket در مسیر '{$socketPath}' امکان‌پذیر نیست یا سرویس در دسترس نمی‌باشد (BLOCKED / NOT AVAILABLE)."
-                : "برقراری ارتباط با سرویس {$driver->getName()} با شکست مواجه شد. لطفاً هاست و پورت سرور را بررسی نمایید.";
+            $apcuDriver = new \App\Support\Cache\ApcuCacheDriver();
+            $testKey = '__crmwp_apcu_diag_' . bin2hex(random_bytes(4));
+            $testVal = ['diag' => 'ok', 'time' => time()];
+            $writeOk = $apcuDriver->set($testKey, $testVal, 10);
+            $readOk = false;
+            if ($writeOk) {
+                $ret = $apcuDriver->get($testKey);
+                $readOk = is_array($ret) && isset($ret['diag']) && $ret['diag'] === 'ok';
+            }
+            $deleteOk = $apcuDriver->forget($testKey);
+            $hasAfter = $apcuDriver->has($testKey);
+            $deleteVerified = $deleteOk && !$hasAfter;
+            $latency = round((microtime(true) - $start) * 1000, 2);
 
             return $this->success([
-                'success' => false,
-                'driver' => $driver->getName(),
-                'connection_type' => $connectionType,
-                'connection_status' => 'BLOCKED / NOT AVAILABLE',
-                'extension_installed' => $extensionName ? extension_loaded($extensionName) : true,
-                'connected' => false,
-                'write_ok' => false,
-                'read_ok' => false,
-                'delete_ok' => false,
-                'latency_ms' => 0,
-                'message' => $failMessage,
+                'success' => $writeOk && $readOk && $deleteVerified,
+                'driver' => 'apcu',
+                'connection_type' => 'memory',
+                'connection_status' => 'CONNECTED',
+                'extension_installed' => true,
+                'connected' => true,
+                'write_ok' => $writeOk,
+                'read_ok' => $readOk,
+                'delete_ok' => $deleteVerified,
+                'latency_ms' => $latency,
+                'message' => "تست APCu با موفقیت انجام شد ({$latency} میلی‌ثانیه).",
             ]);
         }
 
-        // Live Real Operational Test
-        $writeOk = $driver->set($testKey, $testValue, 10);
-        $readOk = false;
-        if ($writeOk) {
-            $readData = $driver->get($testKey);
-            $readOk = is_array($readData) && isset($readData['ping']) && $readData['ping'] === 'pong';
-        }
-        $deleteOk = $driver->forget($testKey);
-        $hasKeyAfterDelete = $driver->has($testKey);
-        $deleteVerified = $deleteOk && !$hasKeyAfterDelete;
-
-        $latencyMs = round((microtime(true) - $start) * 1000, 2);
-        $allPassed = $writeOk && $readOk && $deleteVerified;
-
-        return $this->success([
-            'success' => $allPassed,
-            'driver' => $driver->getName(),
-            'connection_type' => $connectionType,
-            'connection_status' => $allPassed ? 'CONNECTED' : 'PARTIAL_FAILURE',
-            'extension_installed' => true,
-            'connected' => true,
-            'write_ok' => $writeOk,
-            'read_ok' => $readOk,
-            'delete_ok' => $deleteVerified,
-            'latency_ms' => $latencyMs,
-            'message' => $allPassed
-                ? "تست کامل کش ({$driver->getName()} - {$connectionType}) با موفقیت در زمان {$latencyMs} میلی‌ثانیه به پایان رسید (Write, Read, Delete تایید شد)."
-                : "تست عملیاتی با خطا مواجه شد.",
-        ]);
+        return $this->error('INVALID_DRIVER', 'درایور نامعتبر است.', [], 400);
     }
 
     /**

@@ -11,8 +11,53 @@
     stroke-linecap="round"
     stroke-linejoin="round"
   >
+    <!-- Profile Circle / Avatar -->
+    <g v-if="name === 'profile-circle' || name === 'user-circle'">
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="10" r="3" />
+      <path d="M7 18.5C7.8 16.5 9.7 15.2 12 15.2C14.3 15.2 16.2 16.5 17 18.5" />
+    </g>
+
+    <!-- User / Profile -->
+    <g v-else-if="name === 'user' || name === 'profile'">
+      <circle cx="12" cy="7" r="4" />
+      <path d="M6 21V19C6 16.7909 7.79086 15 10 15H14C16.2091 15 18 16.7909 18 19V21" />
+    </g>
+
+    <!-- Clock / Clock-1 -->
+    <g v-else-if="name === 'clock' || name === 'clock-1'">
+      <circle cx="12" cy="12" r="9.5" />
+      <polyline points="12 7 12 12 15 14" />
+    </g>
+
+    <!-- Calendar / Calendar-2 -->
+    <g v-else-if="name === 'calendar' || name === 'calendar-2'">
+      <rect x="3" y="4" width="18" height="18" rx="3" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+      <circle cx="8" cy="15" r="1" fill="currentColor" />
+      <circle cx="12" cy="15" r="1" fill="currentColor" />
+      <circle cx="16" cy="15" r="1" fill="currentColor" />
+    </g>
+
+    <!-- Money Recive / Income -->
+    <g v-else-if="name === 'money-recive' || name === 'money-receive'">
+      <rect x="2" y="5" width="20" height="14" rx="3" />
+      <circle cx="12" cy="12" r="3" />
+      <path d="M6 9H6.01M18 15H18.01" />
+      <path d="M19 8L16 11M16 11H18.5M16 11V8.5" />
+    </g>
+
+    <!-- Bag-2 / Shopping Bag -->
+    <g v-else-if="name === 'bag-2' || name === 'bag'">
+      <path d="M5 8V18C5 20.2091 6.79086 22 9 22H15C17.2091 22 19 20.2091 19 18V8" />
+      <path d="M3 8H21" />
+      <path d="M9 8V5C9 3.34315 10.3431 2 12 2C13.6569 2 15 3.34315 15 5V8" />
+    </g>
+
     <!-- Dashboard / Element-4 -->
-    <g v-if="name === 'dashboard' || name === 'element-4'">
+    <g v-else-if="name === 'dashboard' || name === 'element-4'">
       <rect x="3" y="3" width="7" height="7" rx="2" />
       <rect x="14" y="3" width="7" height="7" rx="2" />
       <rect x="14" y="14" width="7" height="7" rx="2" />

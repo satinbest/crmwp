@@ -99,7 +99,7 @@ class CustomerNormalizer
             'username' => $username,
             'phone' => $phone,
             'role' => $role,
-            'avatar_url' => (string)($raw['avatar_url'] ?? ''),
+            'avatar_url' => (!empty($raw['avatar_url']) && !str_contains((string)$raw['avatar_url'], 'gravatar.com')) ? (string)$raw['avatar_url'] : '',
             'billing' => $billing,
             'shipping' => $shipping,
             'orders_count' => $ordersCount,
