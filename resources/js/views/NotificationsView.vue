@@ -412,13 +412,10 @@ const getTypeIconClass = (type, priority) => {
   return 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400';
 };
 
+import { formatDateTime } from '@/utils/formatters';
+
 const formatPersianDate = (isoString) => {
-  if (!isoString) return '';
-  const date = new Date(isoString.replace(' ', 'T'));
-  return new Intl.DateTimeFormat('fa-IR', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(date);
+  return formatDateTime(isoString);
 };
 
 onMounted(() => {

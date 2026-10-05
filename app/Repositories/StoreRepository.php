@@ -78,6 +78,7 @@ class StoreRepository
         ]);
 
         $id = (int)$this->pdo->lastInsertId();
+        \App\Support\Csp::resetCache();
         return $this->findById($id);
     }
 
@@ -144,6 +145,7 @@ class StoreRepository
         $sql = "UPDATE `stores` SET " . implode(', ', $fields) . " WHERE `id` = ?";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
+        \App\Support\Csp::resetCache();
 
         return $this->findById($id);
     }
@@ -193,7 +195,9 @@ class StoreRepository
     public function delete(int $id): bool
     {
         $stmt = $this->pdo->prepare("DELETE FROM `stores` WHERE `id` = ?");
-        return $stmt->execute([$id]);
+        $res = $stmt->execute([$id]);
+        \App\Support\Csp::resetCache();
+        return $res;
     }
 
     public function listForUser(int $userId, bool $isAdmin = false): array

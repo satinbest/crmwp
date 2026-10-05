@@ -371,8 +371,8 @@
           <div class="space-y-1 text-slate-500 text-[11px] p-3 rounded-xl bg-slate-100/60 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/60">
             <div><span class="text-slate-400">Delivery ID: </span>{{ activeLog.delivery_id || '—' }}</div>
             <div><span class="text-slate-400">IP Address: </span>{{ activeLog.ip_address || '—' }}</div>
-            <div><span class="text-slate-400">Created At: </span>{{ activeLog.created_at }}</div>
-            <div v-if="activeLog.processed_at"><span class="text-slate-400">Processed At: </span>{{ activeLog.processed_at }}</div>
+            <div><span class="text-slate-400">زمان دریافت: </span>{{ formatDateTime(activeLog.created_at) }}</div>
+            <div v-if="activeLog.processed_at"><span class="text-slate-400">زمان پردازش: </span>{{ formatDateTime(activeLog.processed_at) }}</div>
           </div>
 
           <!-- Payload JSON Box -->

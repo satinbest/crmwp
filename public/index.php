@@ -128,7 +128,7 @@ if (file_exists($spaFile)) {
     header('X-Frame-Options: DENY');
     header('X-XSS-Protection: 1; mode=block');
     header('Referrer-Policy: strict-origin-when-cross-origin');
-    header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none';");
+    header('Content-Security-Policy: ' . \App\Support\Csp::getHeaderString());
     header('X-Request-Id: ' . Request::currentRequestId());
     readfile($spaFile);
     exit;

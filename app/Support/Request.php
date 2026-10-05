@@ -171,13 +171,15 @@ class Request
     {
         $contentType = $this->headers['content-type'] ?? '';
 
-        if (str_contains($contentType, 'application/json')) {
+        if (str_contains($contentType, 'application/json') || (!empty($this->rawBody) && ($this->rawBody[0] === '{' || $this->rawBody[0] === '['))) {
             $raw = $this->rawBody;
             if (empty($raw)) {
                 return [];
             }
             $data = json_decode($raw, true);
-            return is_array($data) ? $data : [];
+            if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
+                return $data;
+            }
         }
 
         if ($this->method === 'POST') {

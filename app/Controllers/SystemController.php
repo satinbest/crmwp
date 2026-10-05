@@ -268,6 +268,8 @@ class SystemController extends BaseController
         $isAvailable = $driver->isAvailable();
 
         $configuredDriver = strtolower((string)\App\Support\Env::get('CACHE_DRIVER', 'file'));
+        $memcachedConnType = strtolower((string)\App\Support\Env::get('MEMCACHED_CONNECTION_TYPE', 'tcp'));
+        $memcachedSocketPath = (string)\App\Support\Env::get('MEMCACHED_SOCKET_PATH', '/memcached.sock');
         $memcachedHost = (string)\App\Support\Env::get('MEMCACHED_HOST', '127.0.0.1');
         $memcachedPort = (int)\App\Support\Env::get('MEMCACHED_PORT', 11211);
         $redisHost = (string)\App\Support\Env::get('REDIS_HOST', '127.0.0.1');
@@ -318,6 +320,8 @@ class SystemController extends BaseController
             ],
             'config' => [
                 'memcached' => [
+                    'connection_type' => $memcachedConnType,
+                    'socket_path' => $memcachedSocketPath,
                     'host' => $memcachedHost,
                     'port' => $memcachedPort,
                     'supported' => $extensions['memcached'],
@@ -347,10 +351,19 @@ class SystemController extends BaseController
     public function testCacheConnection(Request $request): Response
     {
         $targetDriver = strtolower((string)$request->input('driver', ''));
+        $connectionType = strtolower((string)$request->input('connection_type', 'tcp'));
+        $socketPath = (string)$request->input('socket_path', '/memcached.sock');
         $host = (string)$request->input('host', '');
         $port = (int)$request->input('port', 0);
         $password = (string)$request->input('password', '');
         $database = (int)$request->input('database', 0);
+
+        if (str_starts_with($host, '/') || $connectionType === 'socket' || $connectionType === 'unix_socket') {
+            $connectionType = 'socket';
+            if (empty($socketPath) || $socketPath === '/memcached.sock') {
+                $socketPath = str_starts_with($host, '/') ? $host : $socketPath;
+            }
+        }
 
         $start = microtime(true);
         $testKey = 'crmwp_diag_test_' . bin2hex(random_bytes(4));
@@ -366,31 +379,35 @@ class SystemController extends BaseController
                 return $this->success([
                     'success' => false,
                     'driver' => 'memcached',
+                    'connection_type' => $connectionType,
+                    'connection_status' => 'BLOCKED / NOT AVAILABLE',
                     'extension_installed' => false,
                     'connected' => false,
                     'write_ok' => false,
                     'read_ok' => false,
                     'delete_ok' => false,
                     'latency_ms' => 0,
-                    'message' => 'اکستنشن PHP Memcached بر روی سرور نصب یا فعال نیست.',
+                    'message' => 'اکستنشن PHP Memcached بر روی سرور نصب یا فعال نیست (BLOCKED / NOT AVAILABLE).',
                 ]);
             }
             $testHost = !empty($host) ? $host : (string)\App\Support\Env::get('MEMCACHED_HOST', '127.0.0.1');
             $testPort = $port > 0 ? $port : (int)\App\Support\Env::get('MEMCACHED_PORT', 11211);
-            $driver = new \App\Support\Cache\MemcachedCacheDriver($testHost, $testPort);
+            $driver = new \App\Support\Cache\MemcachedCacheDriver($testHost, $testPort, $connectionType, $socketPath);
         } elseif ($targetDriver === 'redis') {
             $extensionName = 'redis';
             if (!extension_loaded('redis')) {
                 return $this->success([
                     'success' => false,
                     'driver' => 'redis',
+                    'connection_type' => 'tcp',
+                    'connection_status' => 'BLOCKED / NOT AVAILABLE',
                     'extension_installed' => false,
                     'connected' => false,
                     'write_ok' => false,
                     'read_ok' => false,
                     'delete_ok' => false,
                     'latency_ms' => 0,
-                    'message' => 'اکستنشن PHP Redis بر روی سرور نصب یا فعال نیست.',
+                    'message' => 'اکستنشن PHP Redis بر روی سرور نصب یا فعال نیست (BLOCKED / NOT AVAILABLE).',
                 ]);
             }
             $testHost = !empty($host) ? $host : (string)\App\Support\Env::get('REDIS_HOST', '127.0.0.1');
@@ -404,13 +421,15 @@ class SystemController extends BaseController
                 return $this->success([
                     'success' => false,
                     'driver' => 'apcu',
+                    'connection_type' => 'memory',
+                    'connection_status' => 'BLOCKED / NOT AVAILABLE',
                     'extension_installed' => false,
                     'connected' => false,
                     'write_ok' => false,
                     'read_ok' => false,
                     'delete_ok' => false,
                     'latency_ms' => 0,
-                    'message' => 'اکستنشن PHP APCu بر روی سرور فعال نیست.',
+                    'message' => 'اکستنشن PHP APCu بر روی سرور فعال نیست (BLOCKED / NOT AVAILABLE).',
                 ]);
             }
             $driver = new \App\Support\Cache\ApcuCacheDriver();
@@ -420,16 +439,23 @@ class SystemController extends BaseController
         }
 
         if (!$driver->isAvailable()) {
+            $isSocket = ($targetDriver === 'memcached' && $connectionType === 'socket');
+            $failMessage = $isSocket
+                ? "اتصال به Unix Socket در مسیر '{$socketPath}' امکان‌پذیر نیست یا سرویس در دسترس نمی‌باشد (BLOCKED / NOT AVAILABLE)."
+                : "برقراری ارتباط با سرویس {$driver->getName()} با شکست مواجه شد. لطفاً هاست و پورت سرور را بررسی نمایید.";
+
             return $this->success([
                 'success' => false,
                 'driver' => $driver->getName(),
+                'connection_type' => $connectionType,
+                'connection_status' => 'BLOCKED / NOT AVAILABLE',
                 'extension_installed' => $extensionName ? extension_loaded($extensionName) : true,
                 'connected' => false,
                 'write_ok' => false,
                 'read_ok' => false,
                 'delete_ok' => false,
                 'latency_ms' => 0,
-                'message' => "برقراری ارتباط با سرویس {$driver->getName()} با شکست مواجه شد. لطفاً هاست و پورت سرور را بررسی نمایید.",
+                'message' => $failMessage,
             ]);
         }
 
@@ -450,6 +476,8 @@ class SystemController extends BaseController
         return $this->success([
             'success' => $allPassed,
             'driver' => $driver->getName(),
+            'connection_type' => $connectionType,
+            'connection_status' => $allPassed ? 'CONNECTED' : 'PARTIAL_FAILURE',
             'extension_installed' => true,
             'connected' => true,
             'write_ok' => $writeOk,
@@ -457,7 +485,7 @@ class SystemController extends BaseController
             'delete_ok' => $deleteVerified,
             'latency_ms' => $latencyMs,
             'message' => $allPassed
-                ? "تست کامل کش ({$driver->getName()}) با موفقیت در زمان {$latencyMs} میلی‌ثانیه به پایان رسید (Write, Read, Delete تایید شد)."
+                ? "تست کامل کش ({$driver->getName()} - {$connectionType}) با موفقیت در زمان {$latencyMs} میلی‌ثانیه به پایان رسید (Write, Read, Delete تایید شد)."
                 : "تست عملیاتی با خطا مواجه شد.",
         ]);
     }

@@ -379,8 +379,8 @@
               </div>
               <div class="flex justify-between py-1 border-b border-slate-200/40 dark:border-slate-800">
                 <span class="text-slate-400">وضعیت جداول پرسرعت سفارش‌ها (HPOS):</span>
-                <span class="font-bold" :class="connectionResult?.hpos_enabled ? 'text-emerald-600' : 'text-slate-500'">
-                  {{ connectionResult?.hpos_enabled ? 'فعال (HPOS Enabled)' : 'غیرفعال (Legacy Posts Storage)' }}
+                <span class="font-bold" :class="connectionResult?.hpos_enabled === true ? 'text-emerald-600' : (connectionResult?.hpos_enabled === false ? 'text-slate-500' : 'text-amber-500')">
+                  {{ connectionResult?.hpos_enabled === true ? 'فعال (HPOS Enabled)' : (connectionResult?.hpos_enabled === false ? 'غیرفعال (Legacy Posts Storage)' : 'نامشخص / قابل تشخیص نیست') }}
                 </span>
               </div>
               <div class="flex justify-between py-1 border-b border-slate-200/40 dark:border-slate-800">
@@ -568,9 +568,9 @@
               </div>
               <span
                 class="px-2.5 py-0.5 rounded-full text-[11px] font-bold"
-                :class="currentCaps?.hpos_enabled ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600' : 'bg-slate-100 text-slate-500'"
+                :class="currentCaps?.hpos_enabled === true ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600' : (currentCaps?.hpos_enabled === false ? 'bg-slate-100 text-slate-500' : 'bg-amber-50 dark:bg-amber-950 text-amber-600')"
               >
-                {{ currentCaps?.hpos_enabled ? 'جداول اختصاصی فعال' : 'سنتی (wp_posts)' }}
+                {{ currentCaps?.hpos_enabled === true ? 'جداول اختصاصی فعال' : (currentCaps?.hpos_enabled === false ? 'سنتی (wp_posts)' : 'نامشخص / قابل تشخیص نیست') }}
               </span>
             </div>
 

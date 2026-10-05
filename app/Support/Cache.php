@@ -59,9 +59,11 @@ class Cache
         // 1. Try Memcached if preferred
         if ($preferred === 'memcached' || $preferred === 'memcache') {
             try {
+                $connType = (string)Env::get('MEMCACHED_CONNECTION_TYPE', 'tcp');
+                $socketPath = (string)Env::get('MEMCACHED_SOCKET_PATH', '/memcached.sock');
                 $host = (string)Env::get('MEMCACHED_HOST', '127.0.0.1');
                 $port = (int)Env::get('MEMCACHED_PORT', 11211);
-                $driver = new MemcachedCacheDriver($host, $port);
+                $driver = new MemcachedCacheDriver($host, $port, $connType, $socketPath);
                 if ($driver->isAvailable()) {
                     return $driver;
                 }

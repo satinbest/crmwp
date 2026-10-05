@@ -49,21 +49,8 @@ class CapabilityDetector
                 $capabilities['timezone'] = $settings['timezone'] ?? 'Asia/Tehran';
             }
 
-            // HPOS detection:
-            // 1. database.hpos_enabled
-            // 2. features.custom_order_tables.enabled
-            // 3. settings.order_storage == 'cot' or 'custom'
-            $hpos = false;
-            if (isset($systemStatus['database']['hpos_enabled'])) {
-                $hpos = (bool)$systemStatus['database']['hpos_enabled'];
-            } elseif (isset($systemStatus['features']['custom_order_tables']['enabled'])) {
-                $hpos = (bool)$systemStatus['features']['custom_order_tables']['enabled'];
-            } elseif (isset($systemStatus['settings']['order_storage'])) {
-                $storage = strtolower((string)$systemStatus['settings']['order_storage']);
-                $hpos = str_contains($storage, 'cot') || str_contains($storage, 'custom');
-            }
-            $capabilities['hpos_enabled'] = $hpos;
-
+            // Reliable multi-layer HPOS detection
+            $capabilities['hpos_enabled'] = $this->resolveHposStatus($systemStatus);
         } catch (WooCommerceApiException $e) {
             // Rethrow critical auth, permission, rate-limit, and server errors
             if (in_array($e->getHttpStatus(), [401, 403, 429, 500, 502, 503, 504], true)) {
@@ -129,5 +116,97 @@ class CapabilityDetector
         }
 
         return $capabilities;
+    }
+
+    /**
+     * Reliable, multi-layer HPOS (High-Performance Order Storage) detection.
+     * Uses official WooCommerce system_status database inspection, settings probe,
+     * and fallback to settings API without guessing or hardcoding.
+     *
+     * @return bool|null True if enabled, False if disabled, Null if undetectable
+     */
+    public function resolveHposStatus(array $systemStatus): ?bool
+    {
+        // 1. Direct system_status checks
+        // Check database.order_storage
+        if (isset($systemStatus['database']['order_storage'])) {
+            $storage = strtolower((string)$systemStatus['database']['order_storage']);
+            if (str_contains($storage, 'hpos') || str_contains($storage, 'custom') || str_contains($storage, 'cot')) {
+                return true;
+            }
+            if (str_contains($storage, 'post') || str_contains($storage, 'legacy')) {
+                return false;
+            }
+        }
+
+        // Check database.hpos_enabled
+        if (isset($systemStatus['database']['hpos_enabled'])) {
+            return (bool)$systemStatus['database']['hpos_enabled'];
+        }
+
+        // Check environment.hpos_enabled
+        if (isset($systemStatus['environment']['hpos_enabled'])) {
+            return (bool)$systemStatus['environment']['hpos_enabled'];
+        }
+
+        // Check features.custom_order_tables.enabled
+        if (isset($systemStatus['features']['custom_order_tables']['enabled'])) {
+            return (bool)$systemStatus['features']['custom_order_tables']['enabled'];
+        }
+
+        // Check settings.order_storage
+        if (isset($systemStatus['settings']['order_storage'])) {
+            $storage = strtolower((string)$systemStatus['settings']['order_storage']);
+            if (str_contains($storage, 'cot') || str_contains($storage, 'custom') || str_contains($storage, 'hpos')) {
+                return true;
+            }
+            if (str_contains($storage, 'post') || str_contains($storage, 'legacy')) {
+                return false;
+            }
+        }
+
+        // 2. Query WooCommerce Settings API for woocommerce_custom_orders_table_enabled
+        try {
+            $hposSetting = $this->client->get('/settings/advanced/woocommerce_custom_orders_table_enabled');
+            if (is_array($hposSetting) && isset($hposSetting['value'])) {
+                return $hposSetting['value'] === 'yes' || $hposSetting['value'] === true || $hposSetting['value'] === '1';
+            }
+        } catch (\Throwable $e) {
+            // Ignore and try fallback
+        }
+
+        // Try /settings/features/custom_order_tables
+        try {
+            $featSetting = $this->client->get('/settings/features/custom_order_tables');
+            if (is_array($featSetting) && isset($featSetting['value'])) {
+                return $featSetting['value'] === 'yes' || $featSetting['value'] === true || $featSetting['value'] === '1';
+            }
+        } catch (\Throwable $e) {
+            // Ignore
+        }
+
+        // 3. Check WooCommerce database tables list in system_status
+        if (isset($systemStatus['database']['database_tables']['woocommerce'])) {
+            $wcTables = $systemStatus['database']['database_tables']['woocommerce'];
+            if (is_array($wcTables)) {
+                $hasWcOrdersTable = false;
+                foreach ($wcTables as $tblName => $tblInfo) {
+                    $tName = is_string($tblName) ? $tblName : (is_array($tblInfo) ? ($tblInfo['name'] ?? '') : '');
+                    if (str_contains($tName, 'wc_orders') && !str_contains($tName, 'wc_orders_meta')) {
+                        $hasWcOrdersTable = true;
+                        break;
+                    }
+                }
+                if ($hasWcOrdersTable) {
+                    $wcVer = $systemStatus['environment']['version'] ?? '0.0.0';
+                    if (version_compare($wcVer, '8.2.0', '>=')) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        // 4. Undetectable
+        return null;
     }
 }

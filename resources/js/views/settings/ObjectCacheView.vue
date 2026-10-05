@@ -179,8 +179,71 @@
             </div>
           </div>
 
-          <!-- Connection parameters for network drivers -->
-          <div v-if="testForm.driver === 'memcached' || testForm.driver === 'redis'" class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/40">
+          <!-- Connection parameters for Memcached (TCP vs Unix Socket) -->
+          <div v-if="testForm.driver === 'memcached'" class="space-y-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/40">
+            <div>
+              <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-2">نوع اتصال (Connection Type):</label>
+              <div class="flex items-center gap-4 text-xs">
+                <label class="flex items-center gap-1.5 cursor-pointer font-medium text-slate-700 dark:text-slate-300">
+                  <input
+                    type="radio"
+                    v-model="testForm.connection_type"
+                    value="tcp"
+                    class="text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span>شبکه TCP (Host / Port)</span>
+                </label>
+                <label class="flex items-center gap-1.5 cursor-pointer font-medium text-slate-700 dark:text-slate-300">
+                  <input
+                    type="radio"
+                    v-model="testForm.connection_type"
+                    value="socket"
+                    class="text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span>سوکت یونیکس (Unix Socket)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- TCP Fields -->
+            <div v-if="testForm.connection_type === 'tcp'" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <div>
+                <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">آدرس سرور (Host):</label>
+                <input
+                  v-model="testForm.host"
+                  type="text"
+                  placeholder="127.0.0.1"
+                  class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white dir-ltr text-right"
+                />
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">پورت اتصال (Port):</label>
+                <input
+                  v-model.number="testForm.port"
+                  type="number"
+                  placeholder="11211"
+                  class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white dir-ltr text-right"
+                />
+              </div>
+            </div>
+
+            <!-- Unix Socket Fields -->
+            <div v-else class="pt-1">
+              <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">مسیر سوکت (Socket Path):</label>
+              <input
+                v-model="testForm.socket_path"
+                type="text"
+                placeholder="/memcached.sock"
+                class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white dir-ltr text-right"
+              />
+              <p class="text-[11px] text-slate-400 mt-1">
+                مسیر فایل Socket هاستینگ (مثلاً <code class="dir-ltr text-indigo-500">/memcached.sock</code>). اتصال به‌صورت مستقیم از طریق Unix Domain Socket بدون سربار TCP انجام می‌شود.
+              </p>
+            </div>
+          </div>
+
+          <!-- Connection parameters for Redis -->
+          <div v-if="testForm.driver === 'redis'" class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/40">
             <div>
               <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">آدرس سرور (Host):</label>
               <input
@@ -195,11 +258,11 @@
               <input
                 v-model.number="testForm.port"
                 type="number"
-                :placeholder="testForm.driver === 'memcached' ? '11211' : '6379'"
+                placeholder="6379"
                 class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white dir-ltr text-right"
               />
             </div>
-            <div v-if="testForm.driver === 'redis'" class="sm:col-span-2">
+            <div class="sm:col-span-2">
               <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">کلمه عبور Redis (اختیاری):</label>
               <input
                 v-model="testForm.password"
@@ -212,7 +275,7 @@
 
           <div class="pt-2 flex items-center justify-between">
             <div class="text-[11px] text-slate-400">
-              تست اتصال بدون ایجاد تداخل با داده‌های واقعی کاربران اجرا می‌شود.
+              تست اتصال بدون ایجاد تداخل با داده‌های واقعی کاربران اجرا می‌شود (Connect -> Set -> Get -> Delete).
             </div>
             <button
               type="button"
@@ -231,18 +294,26 @@
             <div class="flex items-start justify-between gap-3 mb-3">
               <div class="flex items-center gap-2 font-bold" :class="testResult.success ? 'text-emerald-800 dark:text-emerald-300' : 'text-rose-800 dark:text-rose-300'">
                 <span class="w-2.5 h-2.5 rounded-full" :class="testResult.success ? 'bg-emerald-500' : 'bg-rose-500'"></span>
-                <span>{{ testResult.success ? 'نتیجه تست: اتصال موفق و پایدار' : 'نتیجه تست: خطا در ارتباط' }}</span>
+                <span>{{ testResult.success ? 'نتیجه تست: اتصال موفق و پایدار' : 'نتیجه تست: خطا / عدم دسترسی' }}</span>
+                <span v-if="testResult.connection_status" class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider" :class="testResult.success ? 'bg-emerald-200 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200' : 'bg-rose-200 dark:bg-rose-900 text-rose-800 dark:text-rose-200'">
+                  {{ testResult.connection_status }}
+                </span>
               </div>
-              <span v-if="testResult.latency_ms > 0" class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-white/60 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300" dir="ltr">
-                {{ testResult.latency_ms }} ms
-              </span>
+              <div class="flex items-center gap-2">
+                <span v-if="testResult.connection_type" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/60 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 uppercase">
+                  {{ testResult.connection_type }}
+                </span>
+                <span v-if="testResult.latency_ms > 0" class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-white/60 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300" dir="ltr">
+                  {{ testResult.latency_ms }} ms
+                </span>
+              </div>
             </div>
 
             <p class="text-xs mb-3" :class="testResult.success ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'">
               {{ testResult.message }}
             </p>
 
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-[11px]">
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-[11px]">
               <div class="p-2 rounded-xl bg-white/70 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800">
                 <div class="text-slate-400 text-[10px]">نصب اکستنشن</div>
                 <div class="font-bold mt-0.5" :class="testResult.extension_installed ? 'text-emerald-600' : 'text-rose-600'">
@@ -251,21 +322,28 @@
               </div>
 
               <div class="p-2 rounded-xl bg-white/70 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800">
-                <div class="text-slate-400 text-[10px]">نوشتن (Write)</div>
+                <div class="text-slate-400 text-[10px]">اتصال اولیه</div>
+                <div class="font-bold mt-0.5" :class="testResult.connected ? 'text-emerald-600' : 'text-rose-600'">
+                  {{ testResult.connected ? 'متصل (Connect)' : 'ناموفق' }}
+                </div>
+              </div>
+
+              <div class="p-2 rounded-xl bg-white/70 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800">
+                <div class="text-slate-400 text-[10px]">نوشتن (Set)</div>
                 <div class="font-bold mt-0.5" :class="testResult.write_ok ? 'text-emerald-600' : 'text-rose-600'">
                   {{ testResult.write_ok ? 'تایید شد (OK)' : 'خطا' }}
                 </div>
               </div>
 
               <div class="p-2 rounded-xl bg-white/70 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800">
-                <div class="text-slate-400 text-[10px]">خواندن (Read)</div>
+                <div class="text-slate-400 text-[10px]">خواندن (Get)</div>
                 <div class="font-bold mt-0.5" :class="testResult.read_ok ? 'text-emerald-600' : 'text-rose-600'">
                   {{ testResult.read_ok ? 'تایید شد (OK)' : 'خطا' }}
                 </div>
               </div>
 
               <div class="p-2 rounded-xl bg-white/70 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800">
-                <div class="text-slate-400 text-[10px]">حذف کلید (Delete)</div>
+                <div class="text-slate-400 text-[10px]">حذف (Delete)</div>
                 <div class="font-bold mt-0.5" :class="testResult.delete_ok ? 'text-emerald-600' : 'text-rose-600'">
                   {{ testResult.delete_ok ? 'تایید شد (OK)' : 'خطا' }}
                 </div>
@@ -370,6 +448,8 @@ const testResult = ref(null);
 
 const testForm = reactive({
   driver: 'file',
+  connection_type: 'tcp',
+  socket_path: '/memcached.sock',
   host: '127.0.0.1',
   port: 11211,
   password: '',
@@ -405,6 +485,8 @@ async function fetchCacheInfo() {
     const res = await apiClient.get('/system/cache');
     cacheInfo.value = res.data || {};
     if (cacheInfo.value?.config?.memcached) {
+      testForm.connection_type = cacheInfo.value.config.memcached.connection_type || 'tcp';
+      testForm.socket_path = cacheInfo.value.config.memcached.socket_path || '/memcached.sock';
       testForm.host = cacheInfo.value.config.memcached.host || '127.0.0.1';
       testForm.port = cacheInfo.value.config.memcached.port || 11211;
     }
@@ -421,6 +503,8 @@ async function runTestConnection() {
   try {
     const res = await apiClient.post('/system/cache/test', {
       driver: testForm.driver,
+      connection_type: testForm.connection_type,
+      socket_path: testForm.socket_path,
       host: testForm.host,
       port: testForm.port,
       password: testForm.password || undefined,
@@ -430,6 +514,9 @@ async function runTestConnection() {
   } catch (err) {
     testResult.value = {
       success: false,
+      driver: testForm.driver,
+      connection_type: testForm.connection_type,
+      connection_status: 'BLOCKED / NOT AVAILABLE',
       message: err.message || 'خطا در برقراری ارتباط با سرور کش.',
       latency_ms: 0,
     };

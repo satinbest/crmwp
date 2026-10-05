@@ -20,7 +20,7 @@ class Response
             'X-XSS-Protection' => '1; mode=block',
             'Referrer-Policy' => 'strict-origin-when-cross-origin',
             'Permissions-Policy' => 'geolocation=(), camera=(), microphone=()',
-            'Content-Security-Policy' => "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none';",
+            'Content-Security-Policy' => Csp::getHeaderString(),
             'X-Request-Id' => Request::currentRequestId(),
         ];
 
@@ -80,6 +80,21 @@ class Response
     public function getContent(): mixed
     {
         return $this->content;
+    }
+
+    public function getHeaders(): array
+    {
+        return $this->headers;
+    }
+
+    public function getHeader(string $name): ?string
+    {
+        foreach ($this->headers as $headerName => $headerValue) {
+            if (strcasecmp($headerName, $name) === 0) {
+                return $headerValue;
+            }
+        }
+        return null;
     }
 
     public function send(): void

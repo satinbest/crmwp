@@ -94,6 +94,10 @@ class CustomerAdapter
 
             $normalized = CustomerNormalizer::normalizeCollection($rawList, $this->storeId);
 
+            // Enrich customer list with real aggregated metrics directly from WooCommerce API
+            $metricsService = new \App\Services\CustomerMetricsService();
+            $metricsService->enrichCustomersList($this->client, $this->storeId, $normalized);
+
             return [
                 'data' => $normalized,
                 'meta' => [
@@ -129,7 +133,21 @@ class CustomerAdapter
                     return null;
                 }
 
-                return CustomerNormalizer::normalize($raw, $this->storeId);
+                $customer = CustomerNormalizer::normalize($raw, $this->storeId);
+
+                // Enrich single customer details with real aggregated metrics directly from WooCommerce API
+                $metricsService = new \App\Services\CustomerMetricsService();
+                $metrics = $metricsService->calculateForCustomer($this->client, $this->storeId, $id, $customer['email'] ?? null);
+                if ($metrics['orders_count'] > 0 || (int)$customer['orders_count'] === 0) {
+                    $customer['orders_count'] = $metrics['orders_count'];
+                    $customer['total_spent'] = $metrics['total_spent'];
+                    $customer['average_order_value'] = $metrics['average_order_value'];
+                    if (!empty($metrics['last_order_date'])) {
+                        $customer['last_order_date'] = $metrics['last_order_date'];
+                    }
+                }
+
+                return $customer;
             } catch (WooCommerceApiException $e) {
                 if ($e->getHttpStatus() === 404) {
                     return null;

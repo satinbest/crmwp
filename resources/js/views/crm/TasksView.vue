@@ -140,7 +140,7 @@
               <div class="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 pt-0.5">
                 <span v-if="task.assigned_user_name">👤 مسوول: <strong class="text-slate-700 dark:text-slate-300">{{ task.assigned_user_name }}</strong></span>
                 <span v-if="task.due_date" :class="isOverdue(task) ? 'text-rose-500 font-bold' : 'text-slate-500'">
-                  ⏰ موعد: {{ task.due_date }}
+                  ⏰ موعد: {{ formatDate(task.due_date) }}
                 </span>
                 <router-link
                   v-if="task.wc_customer_id"
@@ -197,6 +197,7 @@ import { useRoute } from 'vue-router';
 import apiClient from '@/api/client';
 import { useNotificationStore } from '@/stores/notification';
 import TaskModal from '@/components/crm/TaskModal.vue';
+import { formatDate } from '@/utils/formatters';
 
 const route = useRoute();
 const notification = useNotificationStore();

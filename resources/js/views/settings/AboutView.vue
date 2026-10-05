@@ -179,9 +179,9 @@
               </div>
               <span
                 class="px-2 py-0.5 rounded-lg text-[11px] font-bold"
-                :class="aboutData?.store?.hpos_enabled ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'"
+                :class="aboutData?.store?.hpos_enabled === true ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300' : (aboutData?.store?.hpos_enabled === false ? 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300' : 'bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300')"
               >
-                {{ aboutData?.store?.hpos_enabled ? 'فعال (جداول اختصاصی)' : 'غیرفعال (جداول سنتی پست‌ها)' }}
+                {{ aboutData?.store?.hpos_enabled === true ? 'فعال (جداول اختصاصی)' : (aboutData?.store?.hpos_enabled === false ? 'غیرفعال (جداول سنتی پست‌ها)' : 'نامشخص / قابل تشخیص نیست') }}
               </span>
             </div>
           </div>
