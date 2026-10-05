@@ -1,6 +1,6 @@
 # سامانه جامع مدیریت و ارتباط با مشتریان ووکامرس (CRMWP)
 ### Standalone WooCommerce CRM & Store Management Platform
-> **نسخه فعلی**: `1.1.0` (Production Stable) | **وضعیت پروژه**: آماده استقرار (Production-Ready) | **مخزن گیت‌هاب**: [satinbest/crmwp](https://github.com/satinbest/crmwp)
+> **نسخه فعلی**: `1.1.0` (Production Stable) | **وضعیت پروژه**: آماده استقرار (Production-Ready) | **مخزن گیت‌هاب**: [satinbest/crmwp](https://github.com/satinbest/crmwp) | **دریافت آخرین نسخه**: [GitHub Releases](https://github.com/satinbest/crmwp/releases/latest)
 
 ---
 
@@ -433,7 +433,7 @@ CRMWP دارای معماری کش دوگانه منعطف است تا هم رو
 سامانه مجهز به یک نصب‌کننده تحت وب ۴ مرحله‌ای (Web Installer) و ابزار خط فرمان است:
 
 ### روش اول: نصب از طریق رابط وب (پیشنهادی)
-1. بسته انتشار `CRM-Production-Release-1.1.0.zip` را در هاست خود آپلود کرده و از حالت فشرده خارج نمایید.
+1. بسته انتشار `CRM-Production-Release-1.1.0.zip` را از بخش [Releases در گیت‌هاب](https://github.com/satinbest/crmwp/releases/latest) دریافت کرده و در هاست خود آپلود و از حالت فشرده خارج نمایید.
 2. مسیر Document Root وب‌سرور یا ساب‌دامین را بر روی پوشه `public/` تنظیم کنید.
 3. یک پایگاه‌داده خالی MariaDB/MySQL ایجاد نمایید.
 4. در مرورگر به آدرس دامنه مراجعه کنید (سیستم به طور خودکار به `/install` هدایت می‌شود).

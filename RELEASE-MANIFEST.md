@@ -4,12 +4,17 @@
 
 * **Application Name**: WooCommerce Management & CRM Platform (`satinbest/crmwp`)
 * **Application Version**: `1.1.0 (Production Stable)`
-* **Release Date**: ۰۶ اکتبر ۲۰۲۶ (۱۴۰۵/۰۷/۱۵)
+* **Release Date**: ۰۶ اکتبر ۲۰۲۶ (۱۴۰۵/۰۷/۱۵) / 2026-10-06
+* **Git Tag**: `v1.1.0`
+* **Git Commit**: `44c9cc82b331f34b1bd6f0803b5ebdf84016f931` (Head of `main`)
 * **Build Status**: `PASSED` (تمامی تست‌های امنیتی، استقرار، سلامت، داشبورد و ارتباط API ۱۰۰٪ موفق)
+* **Security Status**: `PASSED` (اسکن امنیتی جامع انجام شد؛ هیچ کلید، سکرت، توکن یا اطلاعات محرمانه در پکیج وجود ندارد)
 * **Archive File**: `CRM-Production-Release-1.1.0.zip`
 * **Workspace Archive**: `CRM-Production-Release-1.1.0.zip`
 * **Release Folder**: `release/`
-* **SHA-256 Checksum**: `05a5daed600f9173722bc68fa33bd70125fe4468e332791b62f1946b4df8b5e5`
+* **SHA-256 Checksum**: `0bfa634202072de9abc16f7147958f7f5572e1ac1107da443012a47e12e44c39`
+* **WooCommerce Compatibility**: ووکامرس نسخه 7.x, 8.x, 9.x و بالاتر (WooCommerce REST API v3)
+* **HPOS Compatibility**: پشتیبانی کامل و تشخیص خودکار (High-Performance Order Storage Auto-Detection)
 * **Database Migration Version**: ۱۹ مایگریشن ساختار پایگاه داده (`app/Database/Migrations/`)
 * **PHP Requirements**: حداقل `PHP 8.2.0` (تست‌شده روی PHP 8.2, 8.3, 8.4)
 * **MariaDB / MySQL Requirements**: MariaDB 10.6+ / 11.x یا MySQL 8.0+ با Charset `utf8mb4` و Collation `utf8mb4_unicode_ci` (موتور InnoDB با پشتیبانی Foreign Keys و Transactions)
@@ -26,9 +31,14 @@
   * `apcu`: شتاب‌دهنده حافظه محلی
   * `zip`: پشتیبان‌گیری و بازگشایی بسته‌ها
 * **Production Runtime Requirements**: وب‌سرور استاندارد (Apache 2.4+ / Nginx / LiteSpeed) با PHP-FPM
-* **Installation Entry Point**: نصب‌کننده تحت وب: `http://your-domain.com/install` یا کنسول CLI: `php cli.php install`
+* **Installation Entry Point & Notes**: نصب‌کننده تحت وب خودکار: `http://your-domain.com/install` یا کنسول CLI: `php cli.php install`
 * **Cron Requirements**: اجرای دوره‌ای پس‌زمینه هر ۱ الی ۵ دقیقه از طریق CLI: `php cron.php` یا وب‌کرون ایمن: `GET /api/v1/system/cron?secret=YOUR_CRON_SECRET`
 * **Storage Requirements**: مجوز نوشتن وب‌سرور (`chmod 775` یا `755`) روی دایرکتوری `storage/` و زیرپوشه‌های `cache`, `logs`, `uploads`, `locks`, `temp`
+* **Known Limitations**:
+  * حداقل نسخه PHP مورد نیاز 8.2 است (نسخه‌های قدیمی‌تر PHP 7.x یا 8.1 پشتیبانی نمی‌شوند).
+  * نیازمند فعال بودن ماژول Rewrite آپاچی یا تنظیم معادل آن در Nginx/LiteSpeed جهت هدایت درخواست‌ها به `public/`.
+  * دایرکتوری `storage/` باید دسترسی نوشتن برای کاربر وب‌سرور داشته باشد.
+  * برای اجرای بلادرنگ اتوماسیون‌ها و همگام‌سازی، اجرای منظم کران‌جاب سیستمی الزامی است.
 * **Security & Confidentiality Notes**:
   - هیچ داده‌ای از فروشگاه‌های پیشین یا پروداکشن در بسته قرار ندارد.
   - فرانت‌اند و دارایی‌های بصری (فونت Vazirmatn و آیکون‌ها) ۱۰۰٪ ایزوله و محلی هستند (بدون CDN و بدون فونت خارجی).
