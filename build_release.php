@@ -5,14 +5,16 @@ declare(strict_types=1);
 /**
  * Production Release Packaging & Verification Script
  * Generates an isolated, production-ready release folder and standalone ZIP package:
- * CRM-Production-Release-v1.0.0.zip
+ * CRM-Production-Release-1.0.1.zip
  */
 
 $rootDir = __DIR__;
+require_once $rootDir . '/config/app.php';
 $releaseDir = $rootDir . '/release';
 $buildDir = $releaseDir . '/app_package';
-$version = 'v1.0.0';
+$version = defined('CRM_APP_VERSION') ? CRM_APP_VERSION : '1.0.1';
 $primaryZipFile = $releaseDir . "/CRM-Production-Release-{$version}.zip";
+$workspaceZipFile = $rootDir . "/CRM-Production-Release-{$version}.zip";
 $legacyZipFile = $releaseDir . '/crmwp-production-release.zip';
 
 echo "========================================================\n";
@@ -54,6 +56,9 @@ foreach ($storageSubdirs as $sub) {
 if (file_exists($rootDir . '/storage/.htaccess')) {
     copy($rootDir . '/storage/.htaccess', $buildDir . '/storage/.htaccess');
 }
+if (file_exists($rootDir . '/storage/cacert.pem')) {
+    copy($rootDir . '/storage/cacert.pem', $buildDir . '/storage/cacert.pem');
+}
 
 // 4. Copy standalone root production files
 $files = [
@@ -61,6 +66,7 @@ $files = [
     '.env.example',
     'cron.php',
     'cli.php',
+    'CHANGELOG.md',
     'README.md',
     'INSTALL.md',
     'UPGRADE.md',
@@ -81,8 +87,11 @@ foreach ($files as $file) {
     }
 }
 
-// Also place RELEASE-MANIFEST.md directly in releaseDir alongside the ZIP
+// Also place RELEASE-MANIFEST.md and CHANGELOG.md directly in releaseDir alongside the ZIP
 copy($rootDir . '/RELEASE-MANIFEST.md', $releaseDir . '/RELEASE-MANIFEST.md');
+if (file_exists($rootDir . '/CHANGELOG.md')) {
+    copy($rootDir . '/CHANGELOG.md', $releaseDir . '/CHANGELOG.md');
+}
 
 // 5. Verification of Excluded Items in the package
 echo "\nVerifying Release Integrity:\n";
@@ -113,6 +122,7 @@ if (!$allClean) {
 
 // 6. Generate Standalone ZIP Archive
 echo "\nGenerating Standalone ZIP: {$primaryZipFile}...\n";
+$sha256 = null;
 if (class_exists('ZipArchive')) {
     $zip = new ZipArchive();
     if ($zip->open($primaryZipFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true) {
@@ -132,8 +142,15 @@ if (class_exists('ZipArchive')) {
         $zipSizeMb = round(filesize($primaryZipFile) / (1024 * 1024), 2);
         echo " [OK] Standalone ZIP created successfully: {$primaryZipFile} ({$zipSizeMb} MB)\n";
 
+        // Also duplicate to root workspace for immediate access
+        copy($primaryZipFile, $workspaceZipFile);
+        echo " [OK] Copied ZIP to workspace root: {$workspaceZipFile}\n";
+
         // Also duplicate to legacy zip name for compatibility
         copy($primaryZipFile, $legacyZipFile);
+
+        $sha256 = hash_file('sha256', $primaryZipFile);
+        file_put_contents($releaseDir . "/CRM-Production-Release-{$version}.zip.sha256", $sha256 . "  CRM-Production-Release-{$version}.zip\n");
     } else {
         echo " [WARNING] Could not open ZipArchive for writing.\n";
     }
@@ -146,6 +163,8 @@ echo ">>> PRODUCTION ARTIFACT SUCCESSFULLY CREATED AT:\n";
 echo "    Folder: {$releaseDir}\n";
 if (file_exists($primaryZipFile)) {
     echo "    Archive: {$primaryZipFile}\n";
+    echo "    Workspace Archive: {$workspaceZipFile}\n";
+    echo "    SHA-256: {$sha256}\n";
     echo "    Manifest: {$releaseDir}/RELEASE-MANIFEST.md\n";
 }
 echo "========================================================\n";

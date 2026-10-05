@@ -94,7 +94,7 @@ class InstallController
             'directories' => $dirStatus,
             'directories_ok' => $allDirOk,
             'can_install' => $canInstall,
-            'version' => defined('CRM_APP_VERSION') ? CRM_APP_VERSION : '1.0.0',
+            'version' => defined('CRM_APP_VERSION') ? CRM_APP_VERSION : '1.0.1',
         ]);
     }
 
@@ -242,7 +242,7 @@ class InstallController
                 "# Application Settings\n" .
                 "TIMEZONE=Asia/Tehran\n" .
                 "LOCALE=fa\n" .
-                "APP_VERSION=1.0.0\n";
+                "APP_VERSION=" . (defined('CRM_APP_VERSION') ? CRM_APP_VERSION : '1.0.1') . "\n";
 
             file_put_contents($envPath, $envContent);
 
@@ -251,7 +251,7 @@ class InstallController
                 'installed_at' => date('Y-m-d H:i:s'),
                 'admin_username' => $adminUser,
                 'admin_email' => $adminEmail,
-                'version' => defined('CRM_APP_VERSION') ? CRM_APP_VERSION : '1.0.0',
+                'version' => defined('CRM_APP_VERSION') ? CRM_APP_VERSION : '1.0.1',
             ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
             file_put_contents($this->lockFile, $lockContent);
@@ -351,7 +351,7 @@ class InstallController
 
     private function renderInstallerWizard(): Response
     {
-        $version = defined('CRM_APP_VERSION') ? CRM_APP_VERSION : '1.0.0';
+        $version = defined('CRM_APP_VERSION') ? CRM_APP_VERSION : '1.0.1';
         $fontFaces = $this->getVazirmatnFontFaces();
         $html = '<!DOCTYPE html>
 <html lang="fa" dir="rtl">

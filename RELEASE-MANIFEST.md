@@ -2,10 +2,10 @@
 
 ## مشخصات بسته انتشار پروداکشن (Production Release Package)
 
-* **Application Version**: `1.0.0 (Production Stable)`
-* **Release Date**: ۰۳ اکتبر ۲۰۲۶ (۱۴۰۵/۰۷/۱۲)
+* **Application Version**: `1.0.1 (Production Stable)`
+* **Release Date**: ۰۵ اکتبر ۲۰۲۶ (۱۴۰۵/۰۷/۱۴)
 * **Build Status**: `PASSED` (تمامی تست‌های امنیتی، استقرار، مایگریشن و عملیات گروهی ۱۰۰٪ موفق)
-* **Archive File**: `CRM-Production-Release-v1.0.0.zip`
+* **Archive File**: `CRM-Production-Release-1.0.1.zip`
 * **Release Folder**: `release/`
 * **Database Migration Version**: ۱۸ مایگریشن کامل (`001_create_roles_and_permissions_tables.php` تا `018_create_phase15_automations_tables.php`)
 * **PHP Requirements**: حداقل `PHP 8.2.0` (تست‌شده روی PHP 8.2, 8.3, 8.4)
@@ -78,14 +78,14 @@ Composer Runtime: NOT REQUIRED
    ```bash
    php build_release.php
    ```
-   * بسته‌بندی در قالب فایل `CRM-Production-Release-v1.0.0.zip`.
+   * بسته‌بندی در قالب فایل `CRM-Production-Release-1.0.1.zip`.
 
 ---
 
 ## ساختار بسته نهایی (Release Contents)
 
 ```text
-CRM-Production-Release-v1.0.0.zip
+CRM-Production-Release-1.0.1.zip
 ├── .htaccess                     # هدایت درخواست‌ها به public/ و محافظت از فایل‌های محرمانه
 ├── .env.example                  # الگوی متغیرهای محیطی پروداکشن (فاقد هرگونه اطلاعات واقعی)
 ├── cron.php                      # ورودی اجرای دوره‌ای پس‌زمینه (سازگار با CLI و وب‌توکن)

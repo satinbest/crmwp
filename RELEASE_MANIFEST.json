@@ -1,9 +1,9 @@
 {
   "app_name": "WooCommerce Management & CRM",
   "app_slug": "crmwp",
-  "app_version": "1.0.0",
-  "release_candidate_version": "1.0.0-RC1",
-  "build_date": "2026-09-29T16:00:00+03:30",
+  "app_version": "1.0.1",
+  "release_type": "Production Stable",
+  "build_date": "2026-10-05T12:00:00+03:30",
   "environment": "Production-Ready",
   "system_requirements": {
     "php_minimum": "8.2.0",
@@ -29,7 +29,7 @@
   },
   "frontend": {
     "framework": "Vue 3",
-    "build_version": "1.0.0-rc1",
+    "build_version": "1.0.1",
     "styling": "Tailwind CSS + Unified Design Tokens",
     "typography": "Local Vazirmatn (9 font weights woff2, zero external CDN)",
     "icons": "Local Iconsax Vector System",

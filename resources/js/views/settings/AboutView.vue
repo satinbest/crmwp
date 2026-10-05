@@ -41,7 +41,7 @@
               {{ aboutData?.app?.name || 'CRMWP' }}
             </h1>
             <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
-              نسخه {{ aboutData?.app?.version || '1.0.0' }}
+              نسخه {{ aboutData?.app?.version || '1.0.1' }}
             </span>
             <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center gap-1.5">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>

@@ -93,15 +93,15 @@ $assetsDir = __DIR__ . '/../public/assets';
 $fontFiles = glob($assetsDir . '/Vazirmatn-*.woff2');
 assertTest('All 9 local Vazirmatn font weights exist in public/assets', count($fontFiles) === 9);
 
-$publicIndex = file_get_contents(__DIR__ . '/../public/index.php');
-assertTest('CSP in public/index.php restricts font-src to self and data:', str_contains($publicIndex, "font-src 'self' data:"));
+$cspString = \App\Support\Csp::getHeaderString();
+assertTest('CSP restricts font-src to self and data:', str_contains($cspString, "font-src 'self' data:"));
 echo "\n";
 
 // 3. Central Application Versioning
 echo "3. Central Application Versioning:\n";
 $appConfig = require __DIR__ . '/../config/app.php';
 assertTest('Application version is set centrally in config/app.php', !empty($appConfig['version']));
-assertTest('Application version is 1.0.0', $appConfig['version'] === '1.0.0');
+assertTest('Application version is 1.0.1', $appConfig['version'] === '1.0.1');
 echo "\n";
 
 // 4. Installer Environment Check API
