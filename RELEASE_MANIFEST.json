@@ -29,7 +29,7 @@
   },
   "frontend": {
     "framework": "Vue 3",
-    "build_version": "1.0.1",
+    "build_version": "1.1.0",
     "styling": "Tailwind CSS + Unified Design Tokens",
     "typography": "Local Vazirmatn (9 font weights woff2, zero external CDN)",
     "icons": "Local Iconsax Vector System",

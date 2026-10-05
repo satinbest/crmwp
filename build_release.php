@@ -5,14 +5,14 @@ declare(strict_types=1);
 /**
  * Production Release Packaging & Verification Script
  * Generates an isolated, production-ready release folder and standalone ZIP package:
- * CRM-Production-Release-1.0.1.zip
+ * CRM-Production-Release-1.1.0.zip
  */
 
 $rootDir = __DIR__;
 require_once $rootDir . '/config/app.php';
 $releaseDir = $rootDir . '/release';
 $buildDir = $releaseDir . '/app_package';
-$version = defined('CRM_APP_VERSION') ? CRM_APP_VERSION : '1.0.1';
+$version = defined('CRM_APP_VERSION') ? CRM_APP_VERSION : '1.1.0';
 $primaryZipFile = $releaseDir . "/CRM-Production-Release-{$version}.zip";
 $workspaceZipFile = $rootDir . "/CRM-Production-Release-{$version}.zip";
 $legacyZipFile = $releaseDir . '/crmwp-production-release.zip';
@@ -78,6 +78,7 @@ $files = [
     'BACKUP.md',
     'BACKUP_RESTORE.md',
     'PRODUCTION_CHECKLIST.md',
+    'composer.json',
 ];
 
 foreach ($files as $file) {
@@ -85,6 +86,12 @@ foreach ($files as $file) {
         copy($rootDir . '/' . $file, $buildDir . '/' . $file);
         echo " - Copied {$file}\n";
     }
+}
+
+// Clean any leftover dev avatars from public/storage/avatars
+$avatarFiles = glob($buildDir . '/public/storage/avatars/*.{jpg,png,jpeg,webp}', GLOB_BRACE) ?: [];
+foreach ($avatarFiles as $af) {
+    @unlink($af);
 }
 
 // Also place RELEASE-MANIFEST.md and CHANGELOG.md directly in releaseDir alongside the ZIP
@@ -98,6 +105,7 @@ echo "\nVerifying Release Integrity:\n";
 $forbiddenItems = [
     'node_modules',
     '.git',
+    '.github',
     '.env',
     'tests',
     'scratch',
@@ -150,7 +158,10 @@ if (class_exists('ZipArchive')) {
         copy($primaryZipFile, $legacyZipFile);
 
         $sha256 = hash_file('sha256', $primaryZipFile);
-        file_put_contents($releaseDir . "/CRM-Production-Release-{$version}.zip.sha256", $sha256 . "  CRM-Production-Release-{$version}.zip\n");
+        $checksumContent = $sha256 . "  CRM-Production-Release-{$version}.zip\n";
+        file_put_contents($releaseDir . "/CRM-Production-Release-{$version}.sha256", $checksumContent);
+        file_put_contents($rootDir . "/CRM-Production-Release-{$version}.sha256", $checksumContent);
+        file_put_contents($releaseDir . "/CRM-Production-Release-{$version}.zip.sha256", $checksumContent);
     } else {
         echo " [WARNING] Could not open ZipArchive for writing.\n";
     }

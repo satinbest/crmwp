@@ -3,9 +3,9 @@
 ## اطلاعات عمومی پکیج انتشار
 
 * **نام محصول**: سامانه جامع مدیریت و ارتباط با مشتریان ووکامرس (crmwp)
-* **شماره نسخه (Version)**: `1.0.1`
+* **شماره نسخه (Version)**: `1.1.0`
 * **نوع انتشار**: `Production Stable`
-* **تاریخ ساخت (Build Date)**: `2026-10-05`
+* **تاریخ ساخت (Build Date)**: `2026-10-06`
 * **محیط هدف (Environment)**: Production (Shared Hosting & Dedicated Linux Server)
 * **وضعیت لایسنس / مالکیت**: اختصاصی و مستقل (Self-contained)
 

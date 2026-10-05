@@ -38,7 +38,7 @@ class SystemController extends BaseController
 
         $healthData = [
             'status' => $isOk ? 'ok' : 'degraded',
-            'app_version' => Config::get('app.version', defined('CRM_APP_VERSION') ? CRM_APP_VERSION : '1.0.1'),
+            'app_version' => Config::get('app.version', defined('CRM_APP_VERSION') ? CRM_APP_VERSION : '1.1.0'),
             'app_env' => Config::get('app.env', 'production'),
             'php_version' => PHP_VERSION,
             'database' => [
@@ -109,7 +109,7 @@ class SystemController extends BaseController
             'app' => [
                 'name' => Config::get('app.name', 'CRMWP'),
                 'title' => 'سامانه مدیریت یکپارچه ووکامرس و مشتریان (CRM)',
-                'version' => Config::get('app.version', defined('CRM_APP_VERSION') ? CRM_APP_VERSION : '1.0.1'),
+                'version' => Config::get('app.version', defined('CRM_APP_VERSION') ? CRM_APP_VERSION : '1.1.0'),
                 'environment' => Config::get('app.env', 'production'),
                 'locale' => Config::get('app.locale', 'fa'),
                 'timezone' => Config::get('app.timezone', 'Asia/Tehran'),
