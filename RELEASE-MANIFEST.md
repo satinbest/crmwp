@@ -9,7 +9,7 @@
 * **Archive File**: `CRM-Production-Release-1.1.0.zip`
 * **Workspace Archive**: `CRM-Production-Release-1.1.0.zip`
 * **Release Folder**: `release/`
-* **SHA-256 Checksum**: `2980b81c4c3bf4d69a22857a02c69108185b6e081ebb4404c99ecc5a41325171`
+* **SHA-256 Checksum**: `64e2bc0e936161e511b693ccf9ebd4ca816aed73cc3d330b9e6f32bf8185438f`
 * **Database Migration Version**: ۱۹ مایگریشن ساختار پایگاه داده (`app/Database/Migrations/`)
 * **PHP Requirements**: حداقل `PHP 8.2.0` (تست‌شده روی PHP 8.2, 8.3, 8.4)
 * **MariaDB / MySQL Requirements**: MariaDB 10.6+ / 11.x یا MySQL 8.0+ با Charset `utf8mb4` و Collation `utf8mb4_unicode_ci` (موتور InnoDB با پشتیبانی Foreign Keys و Transactions)
