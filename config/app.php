@@ -19,8 +19,8 @@ return [
         'email' => getenv('DEVELOPER_EMAIL') ?: '',
     ],
     'donate' => [
-        'recipient_name' => getenv('DONATE_RECIPIENT_NAME') ?: 'کمک مالی به حسین محمدپور',
-        'card_number' => getenv('DONATE_CARD_NUMBER') ?: '',
+        'recipient_name' => getenv('DONATE_RECIPIENT_NAME') ?: 'حسین محمدپور',
+        'card_number' => getenv('DONATE_CARD_NUMBER') ?: '6219861931965403',
         'email' => getenv('DONATE_EMAIL') ?: 'info@hosseinmohammadpour.ir',
         'github' => getenv('DONATE_GITHUB') ?: 'satinbest/crmwp',
     ],

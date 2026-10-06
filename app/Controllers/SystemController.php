@@ -601,15 +601,15 @@ class SystemController extends BaseController
     {
         $donate = Config::get('app.donate', []);
 
-        $rawCard = (string)($donate['card_number'] ?? '');
-        $cleanCard = preg_replace('/\D/', '', $rawCard);
+        $rawCard = (string)($donate['card_number'] ?? '6219861931965403');
+        $cleanCard = preg_replace('/\D/', '', $rawCard) ?: '6219861931965403';
 
         return $this->success([
-            'recipient_name' => $donate['recipient_name'] ?? 'کمک مالی به حسین محمدپور',
+            'recipient_name' => $donate['recipient_name'] ?? 'حسین محمدپور',
             'card_number' => $cleanCard,
             'email' => $donate['email'] ?? 'info@hosseinmohammadpour.ir',
             'github' => $donate['github'] ?? 'satinbest/crmwp',
-            'has_card' => !empty($cleanCard),
+            'has_card' => true,
         ]);
     }
 }
