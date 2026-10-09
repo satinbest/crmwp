@@ -70,6 +70,17 @@ class OrderService
             }
         }
 
+        $bypass = !empty($params['bypass_cache']) || !empty($params['fresh']);
+        if (!$bypass) {
+            $localSync = new LocalSyncService();
+            $meta = $localSync->getSyncState($storeId, 'orders');
+            $localCount = $localSync->getLocalTableCount($storeId, 'orders');
+
+            if ($localCount > 0 || ($meta['status'] === 'completed' && $meta['last_successful_sync'] !== null)) {
+                return $localSync->getLocalOrders($storeId, $params);
+            }
+        }
+
         $adapter = $this->getOrderAdapter($storeId);
         return $adapter->listOrders($params);
     }

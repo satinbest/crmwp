@@ -109,13 +109,24 @@ class DashboardService
             return $result;
         }
 
-        $adapter = WooCommerceAdapterFactory::create($store);
+        $localSync = new LocalSyncService();
+        $localOrdersCount = $localSync->getLocalTableCount($storeId, 'orders');
+        $localProductsCount = $localSync->getLocalTableCount($storeId, 'products');
 
-        if ($adapter instanceof DemoWooCommerceAdapter) {
-            $data = $this->calculateDemoStats($store, $adapter, $range);
+        if (!$forceRefresh && ($localOrdersCount > 0 || $localProductsCount > 0)) {
+            $data = $localSync->getLocalDashboardOverview($store, $range);
         } else {
-            $data = $this->calculateLiveWooStats($store, $adapter, $range);
+            $adapter = WooCommerceAdapterFactory::create($store);
+
+            if ($adapter instanceof DemoWooCommerceAdapter) {
+                $data = $this->calculateDemoStats($store, $adapter, $range);
+            } else {
+                $data = $this->calculateLiveWooStats($store, $adapter, $range);
+            }
         }
+
+        $syncMeta = $localSync->getSyncState($storeId, 'orders');
+        $data['sync_meta'] = $syncMeta;
 
         $data['store'] = [
             'id' => $store->id,

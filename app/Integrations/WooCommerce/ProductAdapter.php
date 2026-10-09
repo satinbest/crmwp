@@ -81,11 +81,17 @@ class ProductAdapter
             }
         }
 
-        if (!empty($params['category']) && $params['category'] !== 'all') {
+        if (!empty($params['categories'])) {
+            if (is_array($params['categories'])) {
+                $query['category'] = implode(',', array_filter(array_map('intval', $params['categories'])));
+            } else {
+                $query['category'] = trim((string)$params['categories']);
+            }
+        } elseif (!empty($params['category']) && $params['category'] !== 'all') {
             if (is_array($params['category'])) {
                 $query['category'] = implode(',', array_filter(array_map('intval', $params['category'])));
             } else {
-                $query['category'] = (int)$params['category'];
+                $query['category'] = trim((string)$params['category']);
             }
         }
 

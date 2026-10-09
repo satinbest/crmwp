@@ -15,6 +15,11 @@
       </div>
 
       <div class="flex items-center gap-3">
+        <SyncButton
+          entity="products"
+          @synced="fetchProducts"
+        />
+
         <RefreshButton
           @click="fetchProducts"
           :loading="loading"
@@ -240,13 +245,20 @@
         <p class="text-xs text-slate-400 max-w-sm mx-auto">
           با معیارهای جستجو و فیلترهای انتخابی شما هیچ محصولی در فروشگاه یافت نشد.
         </p>
-        <button
-          v-if="hasActiveFilters"
-          @click="resetFilters"
-          class="mt-2 text-xs py-2 px-4 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-medium hover:bg-indigo-100 transition-colors"
-        >
-          پاک کردن فیلترها
-        </button>
+        <div class="flex items-center justify-center gap-2 pt-2">
+          <button
+            v-if="hasActiveFilters"
+            @click="resetFilters"
+            class="text-xs py-2 px-4 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-medium hover:bg-indigo-100 transition-colors"
+          >
+            پاک کردن فیلترها
+          </button>
+          <SyncButton
+            entity="products"
+            label="دریافت محصولات از ووکامرس"
+            @synced="fetchProducts"
+          />
+        </div>
       </div>
 
       <!-- Table View -->
@@ -516,6 +528,8 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue';
 import Iconsax from '@/components/icons/Iconsax.vue';
+import RefreshButton from '@/components/ui/RefreshButton.vue';
+import SyncButton from '@/components/ui/SyncButton.vue';
 import ProductDrawer from '@/components/products/ProductDrawer.vue';
 import BulkOperationDialog from '@/components/bulk/BulkOperationDialog.vue';
 import api from '@/api/client';

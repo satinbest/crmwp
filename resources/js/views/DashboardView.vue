@@ -75,6 +75,13 @@
             </button>
           </div>
 
+          <!-- Manual Full Sync Button with Local Cache status -->
+          <SyncButton
+            entity="all"
+            label="همگام‌سازی ووکامرس"
+            @synced="refreshDashboard"
+          />
+
           <!-- Refresh Button -->
           <RefreshButton
             @click="refreshDashboard"
@@ -423,6 +430,7 @@ import apiClient from '@/api/client';
 import Iconsax from '@/components/icons/Iconsax.vue';
 import StoreSwitcher from '@/components/StoreSwitcher.vue';
 import RefreshButton from '@/components/ui/RefreshButton.vue';
+import SyncButton from '@/components/ui/SyncButton.vue';
 import HelpButton from '@/components/ui/HelpButton.vue';
 import SalesChart from '@/components/dashboard/SalesChart.vue';
 import OrdersStatusChart from '@/components/dashboard/OrdersStatusChart.vue';

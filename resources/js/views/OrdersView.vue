@@ -33,6 +33,11 @@
           </option>
         </select>
 
+        <SyncButton
+          entity="orders"
+          @synced="fetchOrders"
+        />
+
         <RefreshButton
           @click="fetchOrders"
           :loading="loading"
@@ -459,6 +464,8 @@ import { ref, computed, onMounted } from 'vue';
 import apiClient from '@/api/client';
 import { useStoreContext } from '@/stores/storeContext';
 import Iconsax from '@/components/icons/Iconsax.vue';
+import RefreshButton from '@/components/ui/RefreshButton.vue';
+import SyncButton from '@/components/ui/SyncButton.vue';
 import OrderDrawer from '@/components/orders/OrderDrawer.vue';
 import BulkOperationDialog from '@/components/bulk/BulkOperationDialog.vue';
 import { formatNumber, formatPrice, formatDate, toPersianDigits } from '@/utils/formatters';

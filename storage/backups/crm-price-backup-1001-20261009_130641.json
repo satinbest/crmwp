@@ -1,0 +1,37 @@
+{
+    "schema_version": "1.0",
+    "backup_uid": "pb_1a3bf4aa92864a84753c3977",
+    "store_id": 2,
+    "store_url": "https:\/\/demo-woocommerce.local",
+    "created_at_utc": "2026-10-09T13:06:41Z",
+    "operation_id": 1001,
+    "operation_type": "increase_price_percent",
+    "currency": "IRT",
+    "items_count": 2,
+    "items": [
+        {
+            "product_id": 101,
+            "parent_id": 0,
+            "type": "simple",
+            "name": "گوشی سامسونگ",
+            "regular_price": "15000000",
+            "sale_price": "14200000",
+            "price": "",
+            "on_sale": false,
+            "date_on_sale_from": null,
+            "date_on_sale_to": null
+        },
+        {
+            "product_id": 102,
+            "parent_id": 0,
+            "type": "simple",
+            "name": "لوازم جانبی",
+            "regular_price": "200000",
+            "sale_price": "",
+            "price": "",
+            "on_sale": false,
+            "date_on_sale_from": null,
+            "date_on_sale_to": null
+        }
+    ]
+}

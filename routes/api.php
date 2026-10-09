@@ -250,6 +250,14 @@ $router->group(['prefix' => '/api/v1'], function (Router $api) {
         PermissionMiddleware::for('webhooks.view'),
     ]);
 
+    // Local Cache & Controlled Sync Manager
+    $api->get('/stores/{id}/sync/status', [\App\Controllers\SyncController::class, 'status'], [
+        AuthMiddleware::class,
+    ]);
+    $api->post('/stores/{id}/sync/start', [\App\Controllers\SyncController::class, 'start'], [
+        AuthMiddleware::class,
+    ]);
+
     // Webhooks Management & Logs (Phase 13)
     $api->get('/webhooks', [WebhookController::class, 'index'], [
         AuthMiddleware::class,
@@ -509,6 +517,17 @@ $router->group(['prefix' => '/api/v1'], function (Router $api) {
     ]);
 
     $api->post('/bulk-operations/{id}/cancel', [\App\Controllers\BulkOperationController::class, 'cancel'], [
+        AuthMiddleware::class,
+    ]);
+
+    // Price Safety: Backup Download and Safe Restore
+    $api->get('/bulk-operations/price-backup/{uid}/download', [\App\Controllers\BulkOperationController::class, 'downloadPriceBackup'], [
+        AuthMiddleware::class,
+    ]);
+    $api->post('/bulk-operations/price-backup/preview-restore', [\App\Controllers\BulkOperationController::class, 'previewPriceRestore'], [
+        AuthMiddleware::class,
+    ]);
+    $api->post('/bulk-operations/price-backup/execute-restore', [\App\Controllers\BulkOperationController::class, 'executePriceRestore'], [
         AuthMiddleware::class,
     ]);
 

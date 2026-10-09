@@ -1017,6 +1017,28 @@ class DemoWooCommerceAdapter implements WooCommerceAdapterInterface
             $res = array_filter($res, fn($p) => ($p['stock_status'] ?? '') === $params['stock_status']);
         }
 
+        if (!empty($params['status']) && $params['status'] !== 'all') {
+            $res = array_filter($res, fn($p) => ($p['status'] ?? '') === $params['status']);
+        }
+
+        if (!empty($params['type']) && $params['type'] !== 'all') {
+            $res = array_filter($res, fn($p) => ($p['type'] ?? '') === $params['type']);
+        }
+
+        $categoryIds = [];
+        if (!empty($params['categories'])) {
+            $categoryIds = is_array($params['categories']) ? array_map('intval', $params['categories']) : array_map('intval', explode(',', (string)$params['categories']));
+        } elseif (!empty($params['category']) && $params['category'] !== 'all') {
+            $categoryIds = is_array($params['category']) ? array_map('intval', $params['category']) : array_map('intval', explode(',', (string)$params['category']));
+        }
+
+        if (!empty($categoryIds)) {
+            $res = array_filter($res, function ($p) use ($categoryIds) {
+                $prodCatIds = array_column($p['categories'] ?? [], 'id');
+                return !empty(array_intersect($prodCatIds, $categoryIds));
+            });
+        }
+
         if (!empty($params['search'])) {
             $term = mb_strtolower(trim((string)$params['search']));
             $res = array_filter($res, function ($p) use ($term) {

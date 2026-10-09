@@ -29,6 +29,16 @@
           <strong class="text-slate-900 dark:text-slate-100">{{ currentStoreName }}</strong>
         </div>
 
+        <button
+          @click="openPriceRestoreModal"
+          type="button"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white font-bold text-xs transition-colors shadow-xs cursor-pointer"
+          title="بازگردانی امن قیمت‌ها از نسخه پشتیبان JSON"
+        >
+          <Iconsax name="document-upload" size="16" />
+          <span>بازیابی قیمت‌ها از JSON</span>
+        </button>
+
         <RefreshButton
           @click="handleGlobalRefresh"
           :loading="loadingHistory || loadingMeta"
@@ -259,19 +269,116 @@
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-              <!-- Category Filter -->
-              <div class="space-y-1">
-                <label class="block text-slate-500 font-medium">دسته‌بندی محصول:</label>
-                <select
-                  v-model="filters.category"
-                  @change="evaluateTargetNow"
-                  class="w-full py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              <!-- Multi-Category Filter -->
+              <div class="space-y-1 relative sm:col-span-2">
+                <div class="flex items-center justify-between">
+                  <label class="block text-slate-500 font-medium">دسته‌بندی‌های هدف (چند انتخابی):</label>
+                  <span v-if="filters.categories.length > 0" class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
+                    {{ toPersianDigits(filters.categories.length) }} دسته انتخاب شده
+                  </span>
+                </div>
+
+                <!-- Custom Multi-Select Trigger -->
+                <div
+                  @click="categoryDropdownOpen = !categoryDropdownOpen"
+                  class="w-full min-h-[38px] py-1.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 cursor-pointer flex items-center justify-between gap-2 focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option value="all">همه دسته‌ها</option>
-                  <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                    {{ cat.name }} ({{ toPersianDigits(cat.count || 0) }} کالا)
-                  </option>
-                </select>
+                  <div class="flex items-center gap-1.5 flex-wrap flex-1 overflow-hidden">
+                    <span v-if="filters.categories.length === 0" class="text-slate-400 text-xs">
+                      همه دسته‌ها (کلیک برای انتخاب چندگانه...)
+                    </span>
+                    <span
+                      v-for="cId in filters.categories.slice(0, 3)"
+                      :key="cId"
+                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-[11px] font-medium"
+                    >
+                      <span>{{ getCategoryName(cId) }}</span>
+                      <button
+                        type="button"
+                        @click.stop="removeCategory(cId)"
+                        class="hover:text-rose-600 p-0.5 rounded"
+                      >
+                        <Iconsax name="close" size="10" />
+                      </button>
+                    </span>
+                    <span v-if="filters.categories.length > 3" class="text-[10px] font-bold text-indigo-600 bg-indigo-100 dark:bg-indigo-900 px-1.5 py-0.5 rounded-md">
+                      +{{ toPersianDigits(filters.categories.length - 3) }} دیگر
+                    </span>
+                  </div>
+                  <Iconsax name="arrow-down-1" size="14" class="text-slate-400 shrink-0 transition-transform" :class="{ 'rotate-180': categoryDropdownOpen }" />
+                </div>
+
+                <!-- Multi-Select Dropdown Menu -->
+                <div
+                  v-if="categoryDropdownOpen"
+                  class="absolute z-30 top-full mt-1.5 right-0 left-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl p-3 space-y-2.5 max-h-72 overflow-hidden flex flex-col text-xs"
+                >
+                  <!-- Search Bar -->
+                  <div class="relative">
+                    <input
+                      v-model="categorySearchQuery"
+                      type="text"
+                      placeholder="جست‌وجوی نام دسته‌بندی..."
+                      class="w-full py-1.5 pr-8 pl-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                    <Iconsax name="search-normal" size="14" class="absolute right-2.5 top-2.5 text-slate-400" />
+                  </div>
+
+                  <!-- Quick Controls: Select All Matching & Clear -->
+                  <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 text-[11px]">
+                    <button
+                      type="button"
+                      @click="selectAllFilteredCategories"
+                      class="text-indigo-600 dark:text-indigo-400 hover:underline font-bold"
+                    >
+                      انتخاب همه موارد این لیست ({{ toPersianDigits(filteredCategories.length) }})
+                    </button>
+                    <button
+                      type="button"
+                      @click="clearCategorySelection"
+                      class="text-rose-500 hover:underline font-medium"
+                    >
+                      پاک کردن همه
+                    </button>
+                  </div>
+
+                  <!-- Categories List with Checkboxes -->
+                  <div class="overflow-y-auto space-y-1 flex-1 pr-1">
+                    <label
+                      v-for="cat in filteredCategories"
+                      :key="cat.id"
+                      class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition-colors"
+                      :class="filters.categories.includes(cat.id) ? 'bg-indigo-50/60 dark:bg-indigo-950/40 font-bold' : ''"
+                    >
+                      <div class="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          :checked="filters.categories.includes(cat.id)"
+                          @change="toggleCategory(cat.id)"
+                          class="rounded text-indigo-600 focus:ring-0 w-3.5 h-3.5"
+                        />
+                        <span class="text-slate-800 dark:text-slate-200">{{ cat.name }}</span>
+                      </div>
+                      <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-full">
+                        {{ toPersianDigits(cat.count || 0) }} کالا
+                      </span>
+                    </label>
+                    <div v-if="filteredCategories.length === 0" class="p-3 text-center text-slate-400 text-xs">
+                      هیچ دسته‌ای با این نام یافت نشد.
+                    </div>
+                  </div>
+
+                  <!-- Close Button -->
+                  <div class="pt-2 border-t border-slate-100 dark:border-slate-800 text-left">
+                    <button
+                      type="button"
+                      @click="categoryDropdownOpen = false"
+                      class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-700 dark:text-slate-300 font-bold text-[11px]"
+                    >
+                      بستن
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <!-- Product Type Filter -->
@@ -994,6 +1101,33 @@
               </label>
             </div>
 
+            <!-- Price Backup Safety Notice & Download -->
+            <div v-if="activeOpCategory === 'price'" class="p-5 rounded-3xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/60 text-xs space-y-3">
+              <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-2 font-bold text-indigo-900 dark:text-indigo-200">
+                  <Iconsax name="shield-tick" size="20" class="text-indigo-600 dark:text-indigo-400" />
+                  <span>نسخه پشتیبان JSON از قیمت‌ها (Price Safety Backup)</span>
+                </div>
+                <span class="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300">
+                  الزامی پیش از اجرا
+                </span>
+              </div>
+              <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-xs">
+                به منظور تضمین ایمنی و امکان بازگردانی دقیق، هم‌زمان با تایید عملیات، یک نسخه پشتیبان کامل با فرمت استاندارد JSON از قیمت‌های فعلی تمام کالاهای هدف تهیه شده و در اختیارتان قرار می‌گیرد.
+              </p>
+              <div v-if="currentActiveOp?.payload?.price_backup_uid" class="pt-2.5 flex items-center justify-between border-t border-indigo-200/60 dark:border-indigo-800/60 flex-wrap gap-2">
+                <span class="text-slate-500 font-mono text-[11px]">فایل: {{ currentActiveOp.payload.price_backup_filename }}</span>
+                <a
+                  :href="`/api/v1/bulk-operations/price-backup/${currentActiveOp.payload.price_backup_uid}/download`"
+                  target="_blank"
+                  class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-colors shadow-xs"
+                >
+                  <Iconsax name="document-download" size="16" />
+                  <span>دانلود فایل پشتیبان قیمت (JSON)</span>
+                </a>
+              </div>
+            </div>
+
             <!-- Execution Actions -->
             <div class="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
               <button
@@ -1114,6 +1248,87 @@
             <div class="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900">
               <span class="text-rose-700 dark:text-rose-300 text-[11px] font-bold">ناموفق:</span>
               <div class="text-xl font-black text-rose-800 dark:text-rose-200 mt-1">{{ toPersianDigits(progressData.failed) }}</div>
+            </div>
+          </div>
+
+          <!-- Price Backup & Verification Section -->
+          <div v-if="currentActiveOpPriceBackupUid || hasVerificationData" class="p-5 rounded-3xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900 space-y-4 text-xs">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div class="flex items-center gap-2">
+                <Iconsax name="shield-tick" size="22" class="text-indigo-600 dark:text-indigo-400 shrink-0" />
+                <div>
+                  <h4 class="font-bold text-slate-800 dark:text-slate-100">
+                    گزارش تأیید واقعی قیمت‌ها در ووکامرس و نسخه پشتیبان JSON
+                  </h4>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                    قیمت‌ها پس از تغییر، مستقیماً از ووکامرس خوانده شده و با مقادیر مورد انتظار تطبیق داده شدند.
+                  </p>
+                </div>
+              </div>
+
+              <a
+                v-if="currentActiveOpPriceBackupUid"
+                :href="`/api/bulk-operations/price-backup/${currentActiveOpPriceBackupUid}/download`"
+                target="_blank"
+                download
+                class="py-2 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer shrink-0"
+              >
+                <Iconsax name="document-download" size="16" />
+                <span>دانلود نسخه پشتیبان JSON قیمت‌ها</span>
+              </a>
+            </div>
+
+            <!-- Verification Stats Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+              <div class="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900">
+                <span class="text-emerald-700 dark:text-emerald-300 font-bold text-[11px]">قیمت‌های تأیید شده (مطابق):</span>
+                <div class="text-lg font-black text-emerald-800 dark:text-emerald-200 mt-0.5">
+                  {{ toPersianDigits(verifiedItemsCount) }}
+                </div>
+              </div>
+              <div class="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900">
+                <span class="text-amber-700 dark:text-amber-300 font-bold text-[11px]">مغایرت قیمت (Discrepancy):</span>
+                <div class="text-lg font-black text-amber-800 dark:text-amber-200 mt-0.5">
+                  {{ toPersianDigits(discrepancyItemsCount) }}
+                </div>
+              </div>
+              <div class="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                <span class="text-slate-600 dark:text-slate-400 font-bold text-[11px]">نیازمند بررسی / خطای تأیید:</span>
+                <div class="text-lg font-black text-slate-800 dark:text-slate-200 mt-0.5">
+                  {{ toPersianDigits(failedVerificationCount) }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Verification Items Table -->
+            <div v-if="verificationItemsList.length > 0" class="border border-indigo-200 dark:border-indigo-900/60 rounded-2xl overflow-hidden max-h-64 overflow-y-auto bg-white dark:bg-slate-900">
+              <table class="w-full text-right text-xs">
+                <thead class="bg-indigo-50/50 dark:bg-indigo-950/40 text-slate-500 sticky top-0">
+                  <tr>
+                    <th class="p-2.5">شناسه محصول</th>
+                    <th class="p-2.5">قیمت مورد انتظار</th>
+                    <th class="p-2.5">قیمت خوانده‌شده از ووکامرس</th>
+                    <th class="p-2.5">وضعیت تأیید</th>
+                    <th class="p-2.5">یادداشت</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                  <tr v-for="it in verificationItemsList" :key="it.id">
+                    <td class="p-2.5 font-medium text-slate-400">#{{ toPersianDigits(it.entity_id) }}</td>
+                    <td class="p-2.5 text-slate-800 dark:text-slate-200 font-mono">{{ formatVerifiedPrice(it.expected_price) }}</td>
+                    <td class="p-2.5 text-slate-800 dark:text-slate-200 font-mono">{{ formatVerifiedPrice(it.verified_price) }}</td>
+                    <td class="p-2.5">
+                      <span
+                        class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                        :class="it.verification_status === 'verified' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : (it.verification_status === 'discrepancy' ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300' : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300')"
+                      >
+                        {{ it.verification_status === 'verified' ? 'تأیید شده' : (it.verification_status === 'discrepancy' ? 'مغایرت' : 'تأیید نشده') }}
+                      </span>
+                    </td>
+                    <td class="p-2.5 text-slate-500">{{ it.verification_notes || '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -1443,6 +1658,262 @@
         </div>
       </div>
     </div>
+
+    <!-- ==================== JSON PRICE RESTORE MODAL ==================== -->
+    <div
+      v-if="showPriceRestoreModal"
+      class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
+      @click.self="closePriceRestoreModal"
+    >
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden text-xs">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-violet-600 text-white flex items-center justify-center shadow-md shadow-violet-600/20">
+              <Iconsax name="document-upload" size="20" />
+            </div>
+            <div>
+              <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100">
+                بازگردانی امن قیمت‌ها از نسخه پشتیبان JSON
+              </h3>
+              <p class="text-[11px] text-slate-400">
+                بارگذاری فایل Backup، پیش‌نمایش تغییرات و تطبیق واقعی با قیمت‌های زنده ووکامرس
+              </p>
+            </div>
+          </div>
+          <button
+            @click="closePriceRestoreModal"
+            class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            <Iconsax name="close" size="18" />
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-6 overflow-y-auto space-y-6 flex-1">
+          <!-- Step 1: Upload File & Parse -->
+          <div v-if="restoreStep === 1" class="space-y-4">
+            <div class="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900 text-indigo-900 dark:text-indigo-200 space-y-1">
+              <strong class="font-bold block">دستورالعمل بازگردانی:</strong>
+              <p class="text-[11px] leading-relaxed">
+                فایل JSON تهیه‌شده پیش از هر عملیات تغییر قیمت را انتخاب کنید. سیستم صحت ساختار، فروشگاه مربوطه و هش امنیتی (Checksum) فایل را اعتبارسنجی می‌کند و پیش از اعمال هرگونه تغییری در ووکامرس، تفاوت‌ها را به شما نمایش می‌دهد.
+              </p>
+            </div>
+
+            <!-- File Upload Zone -->
+            <div class="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl p-8 text-center space-y-3 hover:border-violet-500 transition-colors bg-slate-50/50 dark:bg-slate-850/50">
+              <input
+                type="file"
+                ref="restoreFileInput"
+                accept=".json"
+                class="hidden"
+                @change="handleRestoreFileUpload"
+              />
+              <div class="w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center mx-auto">
+                <Iconsax name="document-upload" size="24" />
+              </div>
+              <div>
+                <p class="font-bold text-slate-700 dark:text-slate-200">
+                  {{ restoreFileName || 'انتخاب فایل نسخه پشتیبان JSON' }}
+                </p>
+                <p class="text-[11px] text-slate-400 mt-0.5">فرمت قابل قبول: crm-price-backup-*.json</p>
+              </div>
+              <button
+                type="button"
+                @click="$refs.restoreFileInput.click()"
+                class="py-2 px-5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs transition-colors cursor-pointer shadow-sm"
+              >
+                انتخاب فایل از دستگاه
+              </button>
+            </div>
+
+            <!-- Or Paste Raw JSON -->
+            <div class="space-y-1.5">
+              <label class="block font-bold text-slate-600 dark:text-slate-300">یا متن JSON نسخه پشتیبان را وارد نمایید:</label>
+              <textarea
+                v-model="restoreRawJson"
+                rows="4"
+                placeholder='{"schema_version": "1.0", "store_id": 1, ...}'
+                class="w-full p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-mono text-xs focus:ring-2 focus:ring-violet-500"
+                dir="ltr"
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Step 2: Live Preview & Discrepancies Diff -->
+          <div v-if="restoreStep === 2 && restorePreviewData" class="space-y-4">
+            <!-- Metadata Bar -->
+            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
+              <div><span class="text-slate-400">شناسه فروشگاه:</span> <strong class="text-slate-800 dark:text-slate-100 mr-1">{{ restorePreviewData.metadata?.store_id }}</strong></div>
+              <div><span class="text-slate-400">نسخه ساختار:</span> <strong class="text-slate-800 dark:text-slate-100 mr-1">{{ restorePreviewData.metadata?.schema_version }}</strong></div>
+              <div><span class="text-slate-400">تاریخ بک‌آپ:</span> <span class="text-slate-600 dark:text-slate-300 mr-1">{{ restorePreviewData.metadata?.created_at_utc }}</span></div>
+              <div><span class="text-slate-400">وضعیت صحت هش:</span> <span class="font-bold text-emerald-600 mr-1">تأیید شده</span></div>
+            </div>
+
+            <!-- Stats Counters -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+              <div class="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                <span class="text-slate-400 text-[11px]">کل اقلام فایل:</span>
+                <div class="text-lg font-black text-slate-800 dark:text-slate-100 mt-0.5">{{ toPersianDigits(restorePreviewData.total_items) }}</div>
+              </div>
+              <div class="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900">
+                <span class="text-emerald-700 dark:text-emerald-300 font-bold text-[11px]">بدون تغییر (تطابق کامل):</span>
+                <div class="text-lg font-black text-emerald-800 dark:text-emerald-200 mt-0.5">{{ toPersianDigits(restorePreviewData.matching_count) }}</div>
+              </div>
+              <div class="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900">
+                <span class="text-amber-700 dark:text-amber-300 font-bold text-[11px]">دارای مغایرت (تغییر جدید):</span>
+                <div class="text-lg font-black text-amber-800 dark:text-amber-200 mt-0.5">{{ toPersianDigits(restorePreviewData.discrepancy_count) }}</div>
+              </div>
+              <div class="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900">
+                <span class="text-rose-700 dark:text-rose-300 font-bold text-[11px]">یافت‌نشده در ووکامرس:</span>
+                <div class="text-lg font-black text-rose-800 dark:text-rose-200 mt-0.5">{{ toPersianDigits(restorePreviewData.not_found_count) }}</div>
+              </div>
+            </div>
+
+            <!-- Discrepancy Warning & Options -->
+            <div v-if="restorePreviewData.discrepancy_count > 0" class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-200 space-y-2">
+              <div class="flex items-center gap-2">
+                <Iconsax name="warning-2" size="20" class="text-amber-600 shrink-0" />
+                <strong class="font-bold">هشدار: برخی کالاها پس از ایجاد این نسخه پشتیبان، تغییر قیمت جدید داشته‌اند!</strong>
+              </div>
+              <p class="text-[11px] leading-relaxed">
+                قیمت فعلی زنده در ووکامرس با قیمتی که پس از عملیات مورد انتظار بوده یکسان نیست. برای جلوگیری از بازنویسی اشتباهی، می‌توانید فقط اقلام بدون مغایرت را بازیابی نمایید:
+              </p>
+              <label class="flex items-center gap-2 cursor-pointer font-bold text-xs pt-1">
+                <input type="checkbox" v-model="restoreSkipDiscrepancies" class="rounded text-violet-600 focus:ring-0" />
+                <span>فقط بازگردانی اقلام بدون مغایرت (عدم دستکاری کالاهای با تغییر قیمت جدید)</span>
+              </label>
+            </div>
+
+            <!-- Preview Diff Table -->
+            <div class="space-y-1.5">
+              <h4 class="font-bold text-slate-700 dark:text-slate-200">پیش‌نمایش تغییرات قیمت (Diff):</h4>
+              <div class="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden max-h-60 overflow-y-auto">
+                <table class="w-full text-right text-xs">
+                  <thead class="bg-slate-50 dark:bg-slate-850 sticky top-0 text-slate-500">
+                    <tr>
+                      <th class="p-2.5">شناسه</th>
+                      <th class="p-2.5">نوع</th>
+                      <th class="p-2.5">قیمت عادی فعلی</th>
+                      <th class="p-2.5">قیمت عادی بک‌آپ</th>
+                      <th class="p-2.5">قیمت حراج فعلی</th>
+                      <th class="p-2.5">قیمت حراج بک‌آپ</th>
+                      <th class="p-2.5">وضعیت</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    <tr v-for="it in restorePreviewData.items" :key="it.product_id">
+                      <td class="p-2.5 font-medium text-slate-400">#{{ toPersianDigits(it.product_id) }}</td>
+                      <td class="p-2.5 text-slate-500">{{ it.product_type }}</td>
+                      <td class="p-2.5 font-mono">{{ formatVerifiedPrice(it.current_regular_price) }}</td>
+                      <td class="p-2.5 font-mono text-violet-600 font-bold">{{ formatVerifiedPrice(it.backup_regular_price) }}</td>
+                      <td class="p-2.5 font-mono">{{ formatVerifiedPrice(it.current_sale_price) }}</td>
+                      <td class="p-2.5 font-mono text-violet-600">{{ formatVerifiedPrice(it.backup_sale_price) }}</td>
+                      <td class="p-2.5">
+                        <span
+                          class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                          :class="it.has_discrepancy ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'"
+                        >
+                          {{ it.has_discrepancy ? 'دارای مغایرت' : 'مطابق' }}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Confirmation Checkbox -->
+            <div class="p-3.5 rounded-2xl bg-violet-50/70 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-900/60">
+              <label class="flex items-center gap-2 cursor-pointer font-bold text-xs text-violet-900 dark:text-violet-200">
+                <input type="checkbox" v-model="restoreConfirmed" class="rounded text-violet-600 focus:ring-0" />
+                <span>تأیید می‌کنم که قیمت‌ها در ووکامرس بر اساس این نسخه پشتیبان بازنویسی شوند و تأیید مجدد انجام گیرد.</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Step 3: Execution Result -->
+          <div v-if="restoreStep === 3 && restoreResult" class="space-y-4">
+            <div class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 text-emerald-900 dark:text-emerald-200 space-y-1">
+              <strong class="font-bold flex items-center gap-2">
+                <Iconsax name="tick-circle" size="20" class="text-emerald-600" />
+                <span>عملیات بازگردانی قیمت‌ها با موفقیت در ووکامرس پایان یافت</span>
+              </strong>
+              <p class="text-[11px] leading-relaxed">
+                قیمت‌ها به نسخه پشتیبان بازگردانده شده و مستقیماً از ووکامرس مجدداً خوانده و تأیید شدند.
+              </p>
+            </div>
+
+            <!-- Results Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+              <div class="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                <span class="text-slate-400 text-[11px]">کل اقلام هدف:</span>
+                <div class="text-lg font-black text-slate-800 dark:text-slate-100 mt-0.5">{{ toPersianDigits(restoreResult.total_items) }}</div>
+              </div>
+              <div class="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900">
+                <span class="text-emerald-700 dark:text-emerald-300 font-bold text-[11px]">بازگردانی و تأیید موفق:</span>
+                <div class="text-lg font-black text-emerald-800 dark:text-emerald-200 mt-0.5">{{ toPersianDigits(restoreResult.restored_items) }}</div>
+              </div>
+              <div class="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900">
+                <span class="text-amber-700 dark:text-amber-300 font-bold text-[11px]">رد شده / مغایرت:</span>
+                <div class="text-lg font-black text-amber-800 dark:text-amber-200 mt-0.5">{{ toPersianDigits(restoreResult.skipped_items) }}</div>
+              </div>
+              <div class="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900">
+                <span class="text-rose-700 dark:text-rose-300 font-bold text-[11px]">ناموفق:</span>
+                <div class="text-lg font-black text-rose-800 dark:text-rose-200 mt-0.5">{{ toPersianDigits(restoreResult.failed_items) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-850/50">
+          <button
+            v-if="restoreStep === 2"
+            type="button"
+            @click="restoreStep = 1"
+            class="py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 transition-colors"
+          >
+            ← بازگشت به انتخاب فایل
+          </button>
+          <div v-else></div>
+
+          <div class="flex items-center gap-2">
+            <button
+              v-if="restoreStep === 1"
+              type="button"
+              @click="runRestorePreview"
+              :disabled="restoreLoadingPreview"
+              class="py-2.5 px-5 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-bold transition-all shadow-md shadow-violet-600/20 disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+            >
+              <span v-if="restoreLoadingPreview" class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              <span>بررسی و پیش‌نمایش تفاوت قیمت‌ها</span>
+              <Iconsax name="arrow-left" size="14" />
+            </button>
+
+            <button
+              v-if="restoreStep === 2"
+              type="button"
+              @click="executePriceRestoreNow"
+              :disabled="!restoreConfirmed || restoreExecuting"
+              class="py-2.5 px-6 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-bold transition-all shadow-md shadow-violet-600/20 disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+            >
+              <span v-if="restoreExecuting" class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              <span>اجرای بازگردانی و تأیید در ووکامرس</span>
+            </button>
+
+            <button
+              v-if="restoreStep === 3"
+              type="button"
+              @click="closePriceRestoreModal"
+              class="py-2.5 px-5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold transition-colors cursor-pointer"
+            >
+              بستن پنجره
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -1468,6 +1939,8 @@ const step = ref(1);
 const selectionMode = ref('filter'); // 'filter' | 'manual' | 'all'
 const targetScope = ref('both'); // 'parent' | 'variations' | 'both'
 const categories = ref([]);
+const categoryDropdownOpen = ref(false);
+const categorySearchQuery = ref('');
 const presets = ref([]);
 const loadingMeta = ref(false);
 const evaluatingTarget = ref(false);
@@ -1475,6 +1948,7 @@ const showSampleList = ref(false);
 
 // Filters
 const filters = reactive({
+  categories: [],
   category: 'all',
   type: 'all',
   stock_status: 'all',
@@ -1484,6 +1958,47 @@ const filters = reactive({
   sku: '',
   search: '',
 });
+
+const filteredCategories = computed(() => {
+  if (!categorySearchQuery.value.trim()) return categories.value;
+  const q = categorySearchQuery.value.trim().toLowerCase();
+  return categories.value.filter(c => (c.name || '').toLowerCase().includes(q));
+});
+
+const toggleCategory = (catId) => {
+  const idx = filters.categories.indexOf(catId);
+  if (idx > -1) {
+    filters.categories.splice(idx, 1);
+  } else {
+    filters.categories.push(catId);
+  }
+  debouncedEvaluate();
+};
+
+const removeCategory = (catId) => {
+  const idx = filters.categories.indexOf(catId);
+  if (idx > -1) {
+    filters.categories.splice(idx, 1);
+    debouncedEvaluate();
+  }
+};
+
+const selectAllFilteredCategories = () => {
+  const ids = filteredCategories.value.map(c => c.id);
+  const set = new Set([...filters.categories, ...ids]);
+  filters.categories = Array.from(set);
+  debouncedEvaluate();
+};
+
+const clearCategorySelection = () => {
+  filters.categories = [];
+  debouncedEvaluate();
+};
+
+const getCategoryName = (catId) => {
+  const c = categories.value.find(item => item.id === catId);
+  return c ? c.name : `#${catId}`;
+};
 
 // Target Evaluation Data
 const targetData = ref(null);
@@ -1698,7 +2213,10 @@ const setSelectionMode = (mode) => {
 };
 
 const resetFilters = () => {
+  filters.categories = [];
   filters.category = 'all';
+  categorySearchQuery.value = '';
+  categoryDropdownOpen.value = false;
   filters.type = 'all';
   filters.stock_status = 'all';
   filters.status = 'all';
@@ -1730,7 +2248,11 @@ const buildSelectionPayload = () => {
 
   // Filter mode
   const cleanFilter = {};
-  if (filters.category && filters.category !== 'all') cleanFilter.category = filters.category;
+  if (Array.isArray(filters.categories) && filters.categories.length > 0) {
+    cleanFilter.categories = filters.categories;
+  } else if (filters.category && filters.category !== 'all') {
+    cleanFilter.category = filters.category;
+  }
   if (filters.type && filters.type !== 'all') cleanFilter.type = filters.type;
   if (filters.stock_status && filters.stock_status !== 'all') cleanFilter.stock_status = filters.stock_status;
   if (filters.status && filters.status !== 'all') cleanFilter.status = filters.status;
@@ -2269,6 +2791,140 @@ const finalReportDescription = computed(() => {
   }
   return `تمام ${toPersianDigits(progressData.total)} کالا و تنوع با موفقیت در ووکامرس به‌روزرسانی شدند. کش‌های سیستم نوسازی شدند.`;
 });
+
+// ==================== PRICE VERIFICATION & BACKUP HELPERS ====================
+const currentActiveOpPriceBackupUid = computed(() => {
+  return currentActiveOp.value?.payload?.price_backup_uid || null;
+});
+
+const hasVerificationData = computed(() => {
+  return (currentActiveOp.value?.items || []).some(i => i.verification_status);
+});
+
+const verificationItemsList = computed(() => {
+  return (currentActiveOp.value?.items || []).filter(i => i.verification_status || i.expected_price !== null);
+});
+
+const verifiedItemsCount = computed(() => {
+  return (currentActiveOp.value?.items || []).filter(i => i.verification_status === 'verified').length;
+});
+
+const discrepancyItemsCount = computed(() => {
+  return (currentActiveOp.value?.items || []).filter(i => i.verification_status === 'discrepancy').length;
+});
+
+const failedVerificationCount = computed(() => {
+  return (currentActiveOp.value?.items || []).filter(i => i.verification_status === 'failed' || i.verification_status === 'error').length;
+});
+
+const formatVerifiedPrice = (val) => {
+  if (val === null || val === undefined || val === '') return '-';
+  if (!isNaN(Number(val))) return `${Number(val).toLocaleString('fa-IR')} تومان`;
+  return String(val);
+};
+
+// ==================== JSON PRICE RESTORE STATE & METHODS ====================
+const showPriceRestoreModal = ref(false);
+const restoreStep = ref(1);
+const restoreFileInput = ref(null);
+const restoreFileName = ref('');
+const restoreRawJson = ref('');
+const restoreLoadingPreview = ref(false);
+const restorePreviewData = ref(null);
+const restoreSkipDiscrepancies = ref(false);
+const restoreConfirmed = ref(false);
+const restoreExecuting = ref(false);
+const restoreResult = ref(null);
+
+const openPriceRestoreModal = () => {
+  showPriceRestoreModal.value = true;
+  restoreStep.value = 1;
+  restoreFileName.value = '';
+  restoreRawJson.value = '';
+  restoreLoadingPreview.value = false;
+  restorePreviewData.value = null;
+  restoreSkipDiscrepancies.value = false;
+  restoreConfirmed.value = false;
+  restoreExecuting.value = false;
+  restoreResult.value = null;
+};
+
+const closePriceRestoreModal = () => {
+  showPriceRestoreModal.value = false;
+};
+
+const handleRestoreFileUpload = (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  restoreFileName.value = file.name;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    restoreRawJson.value = e.target?.result || '';
+  };
+  reader.readAsText(file);
+};
+
+const runRestorePreview = async () => {
+  if (!restoreRawJson.value.trim()) {
+    notification.warning('لطفاً ابتدا فایل پشتیبان را انتخاب نمایید یا متن JSON را وارد کنید.');
+    return;
+  }
+  let backupData;
+  try {
+    backupData = JSON.parse(restoreRawJson.value);
+  } catch (e) {
+    notification.error('فرمت متن JSON نامعتبر است. لطفاً فایل سالم انتخاب کنید.');
+    return;
+  }
+
+  restoreLoadingPreview.value = true;
+  try {
+    const res = await api.post('/bulk-operations/price-backup/preview-restore', { backup_data: backupData });
+    if (res?.success !== false) {
+      restorePreviewData.value = res.data;
+      restoreStep.value = 2;
+    } else {
+      notification.error(res.error?.message || 'خطا در اعتبارسنجی فایل پشتیبان');
+    }
+  } catch (err) {
+    notification.error(err.message || 'خطا در ارزیابی ووکامرس');
+  } finally {
+    restoreLoadingPreview.value = false;
+  }
+};
+
+const executePriceRestoreNow = async () => {
+  if (!restoreConfirmed.value) {
+    notification.warning('لطفاً ابتدا گزینه تأیید بازگردانی را علامت بزنید.');
+    return;
+  }
+  let backupData;
+  try {
+    backupData = JSON.parse(restoreRawJson.value);
+  } catch (e) {
+    return;
+  }
+
+  restoreExecuting.value = true;
+  try {
+    const res = await api.post('/bulk-operations/price-backup/execute-restore', {
+      backup_data: backupData,
+      skip_discrepancies: restoreSkipDiscrepancies.value,
+    });
+    if (res?.success !== false) {
+      restoreResult.value = res.data;
+      restoreStep.value = 3;
+      notification.success('بازگردانی قیمت‌ها با موفقیت در ووکامرس اعمال و تأیید شد.');
+      fetchOperations();
+    } else {
+      notification.error(res.error?.message || 'خطا در اجرای بازگردانی قیمت‌ها');
+    }
+  } catch (err) {
+    notification.error(err.message || 'خطا در بازگردانی قیمت‌ها');
+  } finally {
+    restoreExecuting.value = false;
+  }
+};
 
 // Lifecycle
 onMounted(async () => {

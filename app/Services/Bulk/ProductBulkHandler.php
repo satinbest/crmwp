@@ -323,6 +323,112 @@ class ProductBulkHandler extends BaseBulkHandler
         return $validated;
     }
 
+    public function extractCategoryFilterIds(array $filter): array
+    {
+        $cats = [];
+        if (!empty($filter['categories'])) {
+            if (is_array($filter['categories'])) {
+                $cats = array_filter(array_map('intval', $filter['categories']));
+            } elseif (is_string($filter['categories'])) {
+                $cats = array_filter(array_map('intval', explode(',', $filter['categories'])));
+            }
+        } elseif (!empty($filter['category']) && $filter['category'] !== 'all') {
+            if (is_array($filter['category'])) {
+                $cats = array_filter(array_map('intval', $filter['category']));
+            } elseif (is_numeric($filter['category'])) {
+                $cats = [(int)$filter['category']];
+            } elseif (is_string($filter['category'])) {
+                $cats = array_filter(array_map('intval', explode(',', $filter['category'])));
+            }
+        }
+        return array_values(array_unique($cats));
+    }
+
+    public function resolveAllTargetProducts(Store $store, array $selection, array $filter): array
+    {
+        $adapter = new ProductAdapter($store);
+
+        if ($this->isIdsMode($selection)) {
+            $ids = $this->extractIds($selection);
+            if (empty($ids)) {
+                return [];
+            }
+            $res = $adapter->listProducts(['include' => $ids, 'per_page' => count($ids)]);
+            $items = $res['data'] ?? [];
+            $deduped = [];
+            foreach ($items as $item) {
+                $deduped[(int)$item['id']] = $item;
+            }
+            return array_values($deduped);
+        }
+
+        $cats = $this->extractCategoryFilterIds($filter);
+
+        // 1. Try local cache first if available
+        $syncService = new \App\Services\LocalSyncService();
+        if ($syncService->getLocalTableCount((int)$store->id, 'products') > 0) {
+            $localParams = $filter;
+            $localParams['per_page'] = 5000;
+            $localRes = $syncService->getLocalProducts((int)$store->id, $localParams);
+            if (!empty($localRes['data'])) {
+                $deduped = [];
+                foreach ($localRes['data'] as $p) {
+                    $deduped[(int)$p['id']] = $p;
+                }
+                return array_values($deduped);
+            }
+        }
+
+        // 2. Multi-category query via Adapter with deduplication
+        if (count($cats) > 1) {
+            $deduped = [];
+            foreach ($cats as $catId) {
+                $params = array_merge($filter, ['category' => $catId, 'per_page' => 100]);
+                unset($params['categories']);
+                $page = 1;
+                while (true) {
+                    $params['page'] = $page;
+                    $res = $adapter->listProducts($params);
+                    $products = $res['data'] ?? [];
+                    if (empty($products)) {
+                        break;
+                    }
+                    foreach ($products as $p) {
+                        $deduped[(int)$p['id']] = $p;
+                    }
+                    if (count($products) < 100 || count($deduped) >= 5000) {
+                        break;
+                    }
+                    $page++;
+                }
+            }
+            return array_values($deduped);
+        }
+
+        // 3. Single category or general filter query
+        $queryParams = $filter;
+        $queryParams['per_page'] = 100;
+        $page = 1;
+        $allProducts = [];
+        while (true) {
+            $queryParams['page'] = $page;
+            $res = $adapter->listProducts($queryParams);
+            $batch = $res['data'] ?? [];
+            if (empty($batch)) {
+                break;
+            }
+            foreach ($batch as $p) {
+                $allProducts[(int)$p['id']] = $p;
+            }
+            if (count($batch) < 100 || count($allProducts) >= 5000) {
+                break;
+            }
+            $page++;
+        }
+
+        return array_values($allProducts);
+    }
+
     public function resolveCount(Store $store, array $selection, array $filter): int
     {
         if ($this->isIdsMode($selection)) {
@@ -330,47 +436,20 @@ class ProductBulkHandler extends BaseBulkHandler
             return count($ids);
         }
 
-        $adapter = new ProductAdapter($store);
-        $queryParams = array_merge($filter, ['page' => 1, 'per_page' => 1]);
-        $res = $adapter->listProducts($queryParams);
-        return (int)($res['meta']['total'] ?? count($res['data'] ?? []));
+        $all = $this->resolveAllTargetProducts($store, $selection, $filter);
+        return count($all);
     }
 
     public function resolveSample(Store $store, array $selection, array $filter, int $limit = 10): array
     {
-        $adapter = new ProductAdapter($store);
-
-        if ($this->isIdsMode($selection)) {
-            $ids = array_slice($this->extractIds($selection), 0, $limit);
-            if (empty($ids)) {
-                return [];
-            }
-            $res = $adapter->listProducts(['include' => $ids, 'per_page' => count($ids)]);
-            return $res['data'] ?? [];
-        }
-
-        $queryParams = array_merge($filter, ['page' => 1, 'per_page' => $limit]);
-        $res = $adapter->listProducts($queryParams);
-        return $res['data'] ?? [];
+        $all = $this->resolveAllTargetProducts($store, $selection, $filter);
+        return array_slice($all, 0, $limit);
     }
 
     public function resolveEntitiesBatch(Store $store, array $selection, array $filter, int $page, int $perPage): array
     {
-        $adapter = new ProductAdapter($store);
-
-        if ($this->isIdsMode($selection)) {
-            $ids = $this->extractIds($selection);
-            $slice = array_slice($ids, ($page - 1) * $perPage, $perPage);
-            if (empty($slice)) {
-                return [];
-            }
-            $res = $adapter->listProducts(['include' => $slice, 'per_page' => count($slice)]);
-            return $res['data'] ?? [];
-        }
-
-        $queryParams = array_merge($filter, ['page' => $page, 'per_page' => $perPage]);
-        $res = $adapter->listProducts($queryParams);
-        return $res['data'] ?? [];
+        $all = $this->resolveAllTargetProducts($store, $selection, $filter);
+        return array_slice($all, ($page - 1) * $perPage, $perPage);
     }
 
     public function preview(Store $store, array $selection, array $filter, string $actionType, array $params): array
@@ -582,7 +661,7 @@ class ProductBulkHandler extends BaseBulkHandler
 
         // Execute Parent Products (if any)
         if (!empty($parentToExecute)) {
-            $parentResults = $this->executeParentUpdates($adapter, $parentToExecute, $batchSupported);
+            $parentResults = $this->executeParentUpdates($adapter, $parentToExecute, $batchSupported, $actionType);
             $results = array_merge($results, $parentResults);
         }
 
@@ -595,10 +674,148 @@ class ProductBulkHandler extends BaseBulkHandler
         return $results;
     }
 
-    private function executeParentUpdates(ProductAdapter $adapter, array $toExecuteMap, bool $batchSupported): array
+    public static function isPriceAction(string $actionType): bool
+    {
+        return in_array($actionType, [
+            'increase_price_percent',
+            'decrease_price_percent',
+            'increase_price_amount',
+            'decrease_price_amount',
+            'set_regular_price',
+            'set_sale_price',
+            'clear_sale_price',
+        ], true);
+    }
+
+    private function verifyParentUpdate(ProductAdapter $adapter, int $id, array $info, bool $isPrice): array
+    {
+        if (!$isPrice) {
+            return [
+                'status' => 'completed',
+                'expected_price' => null,
+                'verified_price' => null,
+                'verification_status' => 'not_applicable',
+                'verification_notes' => null,
+                'error_code' => null,
+                'error_message' => null,
+            ];
+        }
+
+        try {
+            $fresh = $adapter->getProduct($id);
+            $expectedReg = isset($info['payload']['regular_price']) ? (string)$info['payload']['regular_price'] : null;
+            $expectedSale = array_key_exists('sale_price', $info['payload']) ? (string)$info['payload']['sale_price'] : null;
+
+            $actualReg = isset($fresh['regular_price']) ? (string)$fresh['regular_price'] : '';
+            $actualSale = isset($fresh['sale_price']) ? (string)$fresh['sale_price'] : '';
+
+            $regOk = ($expectedReg === null) || ($expectedReg === $actualReg);
+            $saleOk = ($expectedSale === null) || ($expectedSale === $actualSale);
+
+            $expectedSummary = "Reg: " . ($expectedReg ?? '-') . ", Sale: " . ($expectedSale ?? '-');
+            $actualSummary = "Reg: {$actualReg}, Sale: {$actualSale}";
+
+            if ($regOk && $saleOk) {
+                return [
+                    'status' => 'completed',
+                    'expected_price' => $expectedSummary,
+                    'verified_price' => $actualSummary,
+                    'verification_status' => 'verified',
+                    'verification_notes' => 'قیمت جدید با موفقیت از ووکامرس خوانده و تطبیق داده شد.',
+                    'error_code' => null,
+                    'error_message' => null,
+                ];
+            } else {
+                return [
+                    'status' => 'verification_failed',
+                    'expected_price' => $expectedSummary,
+                    'verified_price' => $actualSummary,
+                    'verification_status' => 'discrepancy',
+                    'verification_notes' => "مغایرت قیمت: مقدار مورد انتظار [{$expectedSummary}] بود اما در ووکامرس [{$actualSummary}] ثبت شد.",
+                    'error_code' => 'PRICE_DISCREPANCY',
+                    'error_message' => "عدم تطابق قیمت پس از ثبت در ووکامرس",
+                ];
+            }
+        } catch (\Throwable $e) {
+            return [
+                'status' => 'verification_failed',
+                'expected_price' => null,
+                'verified_price' => null,
+                'verification_status' => 'fetch_failed',
+                'verification_notes' => "خطا در خواندن مجدد قیمت جهت صحت‌سنجی: " . $e->getMessage(),
+                'error_code' => 'VERIFICATION_FETCH_ERROR',
+                'error_message' => $e->getMessage(),
+            ];
+        }
+    }
+
+    private function verifyVariationUpdate(ProductAdapter $adapter, int $parentId, int $vId, array $info, bool $isPrice): array
+    {
+        if (!$isPrice) {
+            return [
+                'status' => 'completed',
+                'expected_price' => null,
+                'verified_price' => null,
+                'verification_status' => 'not_applicable',
+                'verification_notes' => null,
+                'error_code' => null,
+                'error_message' => null,
+            ];
+        }
+
+        try {
+            $fresh = $adapter->getVariation($parentId, $vId);
+            $expectedReg = isset($info['payload']['regular_price']) ? (string)$info['payload']['regular_price'] : null;
+            $expectedSale = array_key_exists('sale_price', $info['payload']) ? (string)$info['payload']['sale_price'] : null;
+
+            $actualReg = isset($fresh['regular_price']) ? (string)$fresh['regular_price'] : '';
+            $actualSale = isset($fresh['sale_price']) ? (string)$fresh['sale_price'] : '';
+
+            $regOk = ($expectedReg === null) || ($expectedReg === $actualReg);
+            $saleOk = ($expectedSale === null) || ($expectedSale === $actualSale);
+
+            $expectedSummary = "Reg: " . ($expectedReg ?? '-') . ", Sale: " . ($expectedSale ?? '-');
+            $actualSummary = "Reg: {$actualReg}, Sale: {$actualSale}";
+
+            if ($regOk && $saleOk) {
+                return [
+                    'status' => 'completed',
+                    'expected_price' => $expectedSummary,
+                    'verified_price' => $actualSummary,
+                    'verification_status' => 'verified',
+                    'verification_notes' => 'قیمت متغیر با موفقیت از ووکامرس خوانده و تایید شد.',
+                    'error_code' => null,
+                    'error_message' => null,
+                ];
+            } else {
+                return [
+                    'status' => 'verification_failed',
+                    'expected_price' => $expectedSummary,
+                    'verified_price' => $actualSummary,
+                    'verification_status' => 'discrepancy',
+                    'verification_notes' => "مغایرت قیمت متغیر: مقدار مورد انتظار [{$expectedSummary}] بود اما در ووکامرس [{$actualSummary}] ثبت شد.",
+                    'error_code' => 'PRICE_DISCREPANCY',
+                    'error_message' => "عدم تطابق قیمت متغیر پس از ثبت در ووکامرس",
+                ];
+            }
+        } catch (\Throwable $e) {
+            return [
+                'status' => 'verification_failed',
+                'expected_price' => null,
+                'verified_price' => null,
+                'verification_status' => 'fetch_failed',
+                'verification_notes' => "خطا در خواندن مجدد قیمت متغیر: " . $e->getMessage(),
+                'error_code' => 'VERIFICATION_FETCH_ERROR',
+                'error_message' => $e->getMessage(),
+            ];
+        }
+    }
+
+    private function executeParentUpdates(ProductAdapter $adapter, array $toExecuteMap, bool $batchSupported, string $actionType): array
     {
         $results = [];
         $toRun = [];
+        $isPrice = self::isPriceAction($actionType);
 
         foreach ($toExecuteMap as $id => $info) {
             if ($info['skip']) {
@@ -607,6 +824,10 @@ class ProductBulkHandler extends BaseBulkHandler
                     'status' => 'skipped',
                     'old_value' => $info['old_value'],
                     'new_value' => $info['new_value'],
+                    'expected_price' => null,
+                    'verified_price' => null,
+                    'verification_status' => null,
+                    'verification_notes' => null,
                     'error_code' => 'SKIPPED',
                     'error_message' => $info['skip_reason'] ?? 'بدون نیاز به تغییر',
                 ];
@@ -642,14 +863,12 @@ class ProductBulkHandler extends BaseBulkHandler
                 foreach ($toRun as $id => $info) {
                     $resp = $updatedMap[$id] ?? null;
                     if ($resp && !isset($resp['error'])) {
-                        $results[] = [
+                        $verifyData = $this->verifyParentUpdate($adapter, $id, $info, $isPrice);
+                        $results[] = array_merge([
                             'entity_id' => $id,
-                            'status' => 'completed',
                             'old_value' => $info['old_value'],
                             'new_value' => $info['new_value'],
-                            'error_code' => null,
-                            'error_message' => null,
-                        ];
+                        ], $verifyData);
                     } else {
                         $errMessage = $resp['error']['message'] ?? 'خطا در اعمال تغییرات در ووکامرس';
                         $errCode = $resp['error']['code'] ?? 'BATCH_ITEM_ERROR';
@@ -658,6 +877,10 @@ class ProductBulkHandler extends BaseBulkHandler
                             'status' => 'failed',
                             'old_value' => $info['old_value'],
                             'new_value' => $info['new_value'],
+                            'expected_price' => null,
+                            'verified_price' => null,
+                            'verification_status' => null,
+                            'verification_notes' => null,
                             'error_code' => $errCode,
                             'error_message' => $errMessage,
                         ];
@@ -677,20 +900,22 @@ class ProductBulkHandler extends BaseBulkHandler
                         return $adapter->updateProduct($id, $info['payload']);
                     });
 
-                    $results[] = [
+                    $verifyData = $this->verifyParentUpdate($adapter, $id, $info, $isPrice);
+                    $results[] = array_merge([
                         'entity_id' => $id,
-                        'status' => 'completed',
                         'old_value' => $info['old_value'],
                         'new_value' => $info['new_value'],
-                        'error_code' => null,
-                        'error_message' => null,
-                    ];
+                    ], $verifyData);
                 } catch (\Exception $e) {
                     $results[] = [
                         'entity_id' => $id,
                         'status' => 'failed',
                         'old_value' => $info['old_value'],
                         'new_value' => $info['new_value'],
+                        'expected_price' => null,
+                        'verified_price' => null,
+                        'verification_status' => null,
+                        'verification_notes' => null,
                         'error_code' => 'MUTATION_FAILED',
                         'error_message' => $e->getMessage(),
                     ];
@@ -704,6 +929,7 @@ class ProductBulkHandler extends BaseBulkHandler
     private function executeVariationBatches(ProductAdapter $adapter, array $variationBatches, string $actionType, array $params): array
     {
         $results = [];
+        $isPrice = self::isPriceAction($actionType);
 
         foreach ($variationBatches as $parentId => $data) {
             $vars = $data['variations'];
@@ -719,6 +945,10 @@ class ProductBulkHandler extends BaseBulkHandler
                         'status' => 'skipped',
                         'old_value' => $mutation['old_value'],
                         'new_value' => $mutation['new_value'],
+                        'expected_price' => null,
+                        'verified_price' => null,
+                        'verification_status' => null,
+                        'verification_notes' => null,
                         'error_code' => 'SKIPPED',
                         'error_message' => $mutation['skip_reason'] ?? 'بدون نیاز به تغییر',
                     ];
@@ -759,20 +989,22 @@ class ProductBulkHandler extends BaseBulkHandler
                 foreach ($toMutate as $vId => $info) {
                     $resp = $updatedMap[$vId] ?? null;
                     if ($resp && !isset($resp['error'])) {
-                        $results[] = [
+                        $verifyData = $this->verifyVariationUpdate($adapter, $parentId, $vId, $info, $isPrice);
+                        $results[] = array_merge([
                             'entity_id' => $vId,
-                            'status' => 'completed',
                             'old_value' => $info['old_value'],
                             'new_value' => $info['new_value'],
-                            'error_code' => null,
-                            'error_message' => null,
-                        ];
+                        ], $verifyData);
                     } else {
                         $results[] = [
                             'entity_id' => $vId,
                             'status' => 'failed',
                             'old_value' => $info['old_value'],
                             'new_value' => $info['new_value'],
+                            'expected_price' => null,
+                            'verified_price' => null,
+                            'verification_status' => null,
+                            'verification_notes' => null,
                             'error_code' => $resp['error']['code'] ?? 'VARIATION_BATCH_ERROR',
                             'error_message' => $resp['error']['message'] ?? 'خطا در ثبت تغییرات متغیر در ووکامرس',
                         ];
@@ -791,20 +1023,22 @@ class ProductBulkHandler extends BaseBulkHandler
                             return $adapter->updateVariation($parentId, $vId, $info['payload']);
                         });
 
-                        $results[] = [
+                        $verifyData = $this->verifyVariationUpdate($adapter, $parentId, $vId, $info, $isPrice);
+                        $results[] = array_merge([
                             'entity_id' => $vId,
-                            'status' => 'completed',
                             'old_value' => $info['old_value'],
                             'new_value' => $info['new_value'],
-                            'error_code' => null,
-                            'error_message' => null,
-                        ];
+                        ], $verifyData);
                     } catch (\Exception $ex) {
                         $results[] = [
                             'entity_id' => $vId,
                             'status' => 'failed',
                             'old_value' => $info['old_value'],
                             'new_value' => $info['new_value'],
+                            'expected_price' => null,
+                            'verified_price' => null,
+                            'verification_status' => null,
+                            'verification_notes' => null,
                             'error_code' => 'VARIATION_UPDATE_FAILED',
                             'error_message' => $ex->getMessage(),
                         ];
@@ -816,7 +1050,7 @@ class ProductBulkHandler extends BaseBulkHandler
         return $results;
     }
 
-    private function calculateProductMutation(array $prod, string $actionType, array $params): array
+    public function calculateProductMutation(array $prod, string $actionType, array $params): array
     {
         $payload = [];
         $oldVal = null;
@@ -841,8 +1075,20 @@ class ProductBulkHandler extends BaseBulkHandler
 
                 $newReg = $oldReg;
                 $newSale = $prod['sale_price'] ?? '';
+                $prodId = (int)($prod['id'] ?? 0);
 
-                if ($actionType === 'increase_price_percent') {
+                if ($prodId > 0 && isset($params['precomputed_targets'][$prodId])) {
+                    $pre = $params['precomputed_targets'][$prodId];
+                    $newReg = isset($pre['regular_price']) && $pre['regular_price'] !== '' ? (float)$pre['regular_price'] : $oldReg;
+                    $newSale = (string)($pre['sale_price'] ?? $newSale);
+                    $payload['regular_price'] = (string)$newReg;
+                    if ($actionType === 'clear_sale_price') {
+                        $payload['sale_price'] = '';
+                        $newSale = '';
+                    } elseif ($newSale !== '') {
+                        $payload['sale_price'] = $newSale;
+                    }
+                } elseif ($actionType === 'increase_price_percent') {
                     $newReg = round($oldReg * (1 + ($params['value'] / 100)));
                     $payload['regular_price'] = (string)$newReg;
                 } elseif ($actionType === 'decrease_price_percent') {

@@ -141,13 +141,17 @@
 
                 <!-- Card Middle Row: Card Number (High Contrast, Persian Digits, Standard Typography) -->
                 <div class="relative z-10 my-auto py-1 sm:py-2">
-                  <div class="text-[10px] sm:text-[11px] font-semibold text-slate-800/75 mb-1 sm:mb-1.5 flex items-center justify-between">
+                  <div class="text-[10px] sm:text-[11px] font-semibold text-slate-800/75 mb-1.5 flex items-center justify-between">
                     <span>شماره کارت بانکی</span>
                     <span class="text-[9px] font-bold tracking-widest text-slate-800/60 uppercase">IRAN SHETAB</span>
                   </div>
-                  <div class="dir-ltr text-center sm:text-right">
-                    <span class="text-[18px] sm:text-[22px] md:text-[24px] font-bold tracking-wider sm:tracking-widest text-slate-900 select-all leading-none inline-block whitespace-nowrap">
-                      {{ formattedCardPersian }}
+                  <div class="flex items-center justify-between font-bold text-slate-900 select-all leading-none dir-ltr px-0.5 sm:px-1" dir="ltr">
+                    <span
+                      v-for="(group, idx) in cardGroupsPersian"
+                      :key="idx"
+                      class="text-[19px] sm:text-[23px] md:text-[25px] tracking-wider sm:tracking-widest inline-block font-bold"
+                    >
+                      {{ group }}
                     </span>
                   </div>
                 </div>
@@ -281,6 +285,14 @@ const formattedCardPersian = computed(() => {
   const parts = String(raw).match(/.{1,4}/g) || [raw];
   const spaced = parts.join('   ');
   return toPersianDigits(spaced);
+});
+
+// Card groups array in Persian digits for crisp LTR flexbox alignment
+const cardGroupsPersian = computed(() => {
+  const raw = donation.value.cardNumber || donationConfig.cardNumber;
+  if (!raw) return ['—'];
+  const parts = String(raw).match(/.{1,4}/g) || [raw];
+  return parts.map((part) => toPersianDigits(part));
 });
 
 // Optional background sync with backend endpoint if available

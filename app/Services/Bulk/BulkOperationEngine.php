@@ -172,6 +172,25 @@ class BulkOperationEngine
         }
 
         $targetEntityDb = $this->getTargetEntityDbEnum($entityType);
+        $isPriceAction = ($handler instanceof ProductBulkHandler && ProductBulkHandler::isPriceAction($actionType));
+
+        $allTargetProducts = [];
+        if ($isPriceAction) {
+            $targetScope = $actionParams['target'] ?? 'parent';
+            $allTargetProducts = $handler->resolveAllTargetProducts($store, $selection, $filter, $targetScope);
+
+            // Precompute expected target regular and sale prices to ensure idempotency & prevent compound % increases on retry
+            $precomputed = [];
+            foreach ($allTargetProducts as $tProd) {
+                $tId = (int)$tProd['id'];
+                $mutation = $handler->calculateProductMutation($tProd, $actionType, $actionParams);
+                $precomputed[$tId] = [
+                    'regular_price' => $mutation['payload']['regular_price'] ?? ($tProd['regular_price'] ?? ''),
+                    'sale_price' => $mutation['payload']['sale_price'] ?? ($tProd['sale_price'] ?? ''),
+                ];
+            }
+            $actionParams['precomputed_targets'] = $precomputed;
+        }
 
         $payload = [
             'action' => [
@@ -209,6 +228,29 @@ class BulkOperationEngine
         ]);
 
         $opId = (int)$this->pdo->lastInsertId();
+
+        // For price mutations: Generate authoritative downloadable JSON Price Backup prior to execution
+        if ($isPriceAction) {
+            $priceBackupService = new PriceBackupService($this->pdo, $this->storeRepo);
+            try {
+                $backupRecord = $priceBackupService->createBackup($store, $userId, $opId, $actionType, $allTargetProducts);
+                $payload['price_backup_uid'] = $backupRecord['backup_uid'];
+                $payload['price_backup_filename'] = $backupRecord['filename'];
+                $payload['price_backup_id'] = $backupRecord['backup_id'];
+
+                $this->pdo->prepare("UPDATE bulk_operations SET payload = :payload WHERE id = :id")->execute([
+                    'payload' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+                    'id' => $opId,
+                ]);
+            } catch (\Throwable $backupErr) {
+                // Abort operation: delete or mark failed
+                $this->pdo->prepare("UPDATE bulk_operations SET status = 'failed', result_data = :res WHERE id = :id")->execute([
+                    'res' => json_encode(['error' => 'ایجاد نسخه پشتیبان قیمت‌ها با شکست مواجه شد: ' . $backupErr->getMessage()], JSON_UNESCAPED_UNICODE),
+                    'id' => $opId,
+                ]);
+                throw new InvalidArgumentException("عدم امکان شروع عملیات قیمت‌گذاری: تهیه نسخه پشتیبان قیمت با شکست مواجه شد. " . $backupErr->getMessage());
+            }
+        }
 
         $this->auditService->log(
             $userId,
@@ -276,6 +318,7 @@ class BulkOperationEngine
         $successTotal = 0;
         $failedTotal = 0;
         $skippedTotal = 0;
+        $verificationFailedTotal = 0;
 
         $page = 1;
         $isCancelled = false;
@@ -303,9 +346,13 @@ class BulkOperationEngine
                 // Persist item results
                 $itemInsertStmt = $this->pdo->prepare("
                     INSERT INTO bulk_operation_items (
-                        bulk_operation_id, entity_id, status, old_state, new_state, error_code, error_message, processed_at
+                        bulk_operation_id, entity_id, status, old_state, new_state,
+                        expected_price, verified_price, verification_status, verification_notes,
+                        error_code, error_message, processed_at
                     ) VALUES (
-                        :op_id, :entity_id, :status, :old_state, :new_state, :error_code, :error_message, NOW()
+                        :op_id, :entity_id, :status, :old_state, :new_state,
+                        :expected_price, :verified_price, :verification_status, :verification_notes,
+                        :error_code, :error_message, NOW()
                     )
                 ");
 
@@ -315,6 +362,9 @@ class BulkOperationEngine
                         $successTotal++;
                     } elseif ($itemStatus === 'skipped') {
                         $skippedTotal++;
+                    } elseif ($itemStatus === 'verification_failed') {
+                        $verificationFailedTotal++;
+                        $failedTotal++;
                     } else {
                         $failedTotal++;
                     }
@@ -326,6 +376,10 @@ class BulkOperationEngine
                         'status' => $itemStatus,
                         'old_state' => isset($res['old_value']) ? json_encode($res['old_value'], JSON_UNESCAPED_UNICODE) : null,
                         'new_state' => isset($res['new_value']) ? json_encode($res['new_value'], JSON_UNESCAPED_UNICODE) : null,
+                        'expected_price' => $res['expected_price'] ?? null,
+                        'verified_price' => $res['verified_price'] ?? null,
+                        'verification_status' => $res['verification_status'] ?? null,
+                        'verification_notes' => $res['verification_notes'] ?? null,
                         'error_code' => $res['error_code'] ?? null,
                         'error_message' => $res['error_message'] ?? null,
                     ]);
@@ -376,6 +430,8 @@ class BulkOperationEngine
                 'succeeded' => $successTotal,
                 'failed' => $failedTotal,
                 'skipped' => $skippedTotal,
+                'verification_failed' => $verificationFailedTotal,
+                'verified' => max(0, $successTotal - $verificationFailedTotal),
             ];
 
             $this->pdo->prepare("
@@ -518,6 +574,7 @@ class BulkOperationEngine
         $successTotal = (int)($op['success_items'] ?? 0);
         $failedTotal = (int)($op['failed_items'] ?? 0);
         $skippedTotal = (int)($op['skipped_items'] ?? 0);
+        $verificationFailedTotal = 0;
 
         // Calculate page for this chunk
         $page = (int)floor($processedTotal / $chunkSize) + 1;
@@ -531,9 +588,13 @@ class BulkOperationEngine
 
             $itemInsertStmt = $this->pdo->prepare("
                 INSERT INTO bulk_operation_items (
-                    bulk_operation_id, entity_id, status, old_state, new_state, error_code, error_message, processed_at
+                    bulk_operation_id, entity_id, status, old_state, new_state,
+                    expected_price, verified_price, verification_status, verification_notes,
+                    error_code, error_message, processed_at
                 ) VALUES (
-                    :op_id, :entity_id, :status, :old_state, :new_state, :error_code, :error_message, NOW()
+                    :op_id, :entity_id, :status, :old_state, :new_state,
+                    :expected_price, :verified_price, :verification_status, :verification_notes,
+                    :error_code, :error_message, NOW()
                 )
             ");
 
@@ -543,6 +604,9 @@ class BulkOperationEngine
                     $successTotal++;
                 } elseif ($itemStatus === 'skipped') {
                     $skippedTotal++;
+                } elseif ($itemStatus === 'verification_failed') {
+                    $verificationFailedTotal++;
+                    $failedTotal++;
                 } else {
                     $failedTotal++;
                 }
@@ -554,6 +618,10 @@ class BulkOperationEngine
                     'status' => $itemStatus,
                     'old_state' => isset($res['old_value']) ? json_encode($res['old_value'], JSON_UNESCAPED_UNICODE) : null,
                     'new_state' => isset($res['new_value']) ? json_encode($res['new_value'], JSON_UNESCAPED_UNICODE) : null,
+                    'expected_price' => $res['expected_price'] ?? null,
+                    'verified_price' => $res['verified_price'] ?? null,
+                    'verification_status' => $res['verification_status'] ?? null,
+                    'verification_notes' => $res['verification_notes'] ?? null,
                     'error_code' => $res['error_code'] ?? null,
                     'error_message' => $res['error_message'] ?? null,
                 ]);
@@ -579,6 +647,8 @@ class BulkOperationEngine
                 'succeeded' => $successTotal,
                 'failed' => $failedTotal,
                 'skipped' => $skippedTotal,
+                'verification_failed' => $verificationFailedTotal,
+                'verified' => max(0, $successTotal - $verificationFailedTotal),
             ];
 
             $this->pdo->prepare("

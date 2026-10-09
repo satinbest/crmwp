@@ -48,7 +48,7 @@ foreach ($dirs as $dir) {
 
 // 3. Prepare storage structure (clean directories without local dev logs/caches)
 echo " - Setting up clean storage/...\n";
-$storageSubdirs = ['cache', 'logs', 'uploads', 'locks', 'temp'];
+$storageSubdirs = ['cache', 'logs', 'uploads', 'locks', 'temp', 'backups'];
 foreach ($storageSubdirs as $sub) {
     @mkdir($buildDir . '/storage/' . $sub, 0755, true);
     file_put_contents($buildDir . '/storage/' . $sub . '/.gitkeep', '');

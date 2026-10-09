@@ -60,6 +60,32 @@ class WebhookProcessor
                 $details = ['unrecognized_event' => $event];
             }
 
+            // Idempotent Local DB Synchronization
+            try {
+                $localSync = new \App\Services\LocalSyncService();
+                if (str_starts_with($event, 'order.')) {
+                    if ($event === 'order.deleted') {
+                        $localSync->deleteLocalOrder($storeId, (int)($payload['id'] ?? 0));
+                    } else {
+                        $localSync->upsertLocalOrder($storeId, $payload);
+                    }
+                } elseif (str_starts_with($event, 'product.')) {
+                    if ($event === 'product.deleted') {
+                        $localSync->deleteLocalProduct($storeId, (int)($payload['id'] ?? 0));
+                    } else {
+                        $localSync->upsertLocalProduct($storeId, $payload);
+                    }
+                } elseif (str_starts_with($event, 'customer.')) {
+                    if ($event === 'customer.deleted') {
+                        $localSync->deleteLocalCustomer($storeId, (int)($payload['id'] ?? 0));
+                    } else {
+                        $localSync->upsertLocalCustomer($storeId, $payload);
+                    }
+                }
+            } catch (\Throwable $localSyncEx) {
+                Logger::warning("Could not sync webhook event to local cache: " . $localSyncEx->getMessage());
+            }
+
             // Dispatch event to EventDispatcher / Automation Engine
             try {
                 $resourceType = explode('.', $event)[0] ?? 'custom';

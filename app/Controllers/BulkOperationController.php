@@ -469,4 +469,136 @@ class BulkOperationController extends BaseController
             return $this->error('BULK_CANCEL_ERROR', $e->getMessage(), [], $code);
         }
     }
+
+    /**
+     * GET /api/v1/bulk-operations/price-backup/{uid}/download
+     */
+    public function downloadPriceBackup(Request $request, array $params = []): Response
+    {
+        try {
+            $user = $request->getUser();
+            if (!$user) {
+                return $this->error('UNAUTHENTICATED', 'احراز هویت الزامی است.', [], 401);
+            }
+
+            if (!$this->rbacService->userHasPermission($user->id, 'bulk.backup') && !$this->rbacService->userHasPermission($user->id, 'bulk.view')) {
+                return $this->error('FORBIDDEN', 'شما مجوز دانلود نسخه پشتیبان قیمت را ندارید.', [], 403);
+            }
+
+            $storeId = $this->resolveStoreContext($request);
+            $uid = (string)($request->param('uid') ?? $params['uid'] ?? $request->query('uid') ?? '');
+
+            if (empty($uid)) {
+                return $this->error('VALIDATION_ERROR', 'شناسه یکتای نسخه پشتیبان (uid) الزامی است.', [], 400);
+            }
+
+            $priceBackupService = new \App\Services\Bulk\PriceBackupService();
+            $fileData = $priceBackupService->getBackupFileContent($storeId, $uid);
+
+            return new Response($fileData['content'], 200, [
+                'Content-Type' => 'application/json; charset=utf-8',
+                'Content-Disposition' => 'attachment; filename="' . $fileData['filename'] . '"',
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return $this->error('NOT_FOUND', $e->getMessage(), [], 404);
+        } catch (\Throwable $e) {
+            $code = $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500;
+            return $this->error('PRICE_BACKUP_DOWNLOAD_ERROR', $e->getMessage(), [], $code);
+        }
+    }
+
+    /**
+     * POST /api/v1/bulk-operations/price-backup/preview-restore
+     */
+    public function previewPriceRestore(Request $request): Response
+    {
+        try {
+            $user = $request->getUser();
+            if (!$user) {
+                return $this->error('UNAUTHENTICATED', 'احراز هویت الزامی است.', [], 401);
+            }
+
+            if (!$this->rbacService->userHasPermission($user->id, 'bulk.restore') && !$this->rbacService->userHasPermission($user->id, 'bulk.execute')) {
+                return $this->error('FORBIDDEN', 'شما مجوز بررسی نسخه پشتیبان [bulk.restore] را ندارید.', [], 403);
+            }
+
+            $storeId = $this->resolveStoreContext($request);
+            $store = $this->storeRepo->findById($storeId);
+            if (!$store) {
+                return $this->error('NOT_FOUND', 'فروشگاه یافت نشد.', [], 404);
+            }
+
+            $backupData = $request->input('backup_data');
+            if (empty($backupData)) {
+                $jsonStr = $request->input('backup_json');
+                if (!empty($jsonStr)) {
+                    $backupData = json_decode($jsonStr, true);
+                }
+            }
+
+            if (empty($backupData) || !is_array($backupData)) {
+                return $this->error('VALIDATION_ERROR', 'محتوای فایل نسخه پشتیبان JSON نامعتبر است.', [], 422);
+            }
+
+            $priceBackupService = new \App\Services\Bulk\PriceBackupService();
+            $preview = $priceBackupService->previewRestore($store, $backupData);
+
+            return $this->success($preview);
+        } catch (\InvalidArgumentException $e) {
+            return $this->error('VALIDATION_ERROR', $e->getMessage(), [], 422);
+        } catch (\Throwable $e) {
+            $code = $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500;
+            return $this->error('PRICE_RESTORE_PREVIEW_ERROR', $e->getMessage(), [], $code);
+        }
+    }
+
+    /**
+     * POST /api/v1/bulk-operations/price-backup/execute-restore
+     */
+    public function executePriceRestore(Request $request): Response
+    {
+        try {
+            $user = $request->getUser();
+            if (!$user) {
+                return $this->error('UNAUTHENTICATED', 'احراز هویت الزامی است.', [], 401);
+            }
+
+            if (!$this->rbacService->userHasPermission($user->id, 'bulk.restore') && !$this->rbacService->userHasPermission($user->id, 'bulk.execute')) {
+                return $this->error('FORBIDDEN', 'شما مجوز بازگردانی قیمت‌ها [bulk.restore] را ندارید.', [], 403);
+            }
+
+            $storeId = $this->resolveStoreContext($request);
+            $store = $this->storeRepo->findById($storeId);
+            if (!$store) {
+                return $this->error('NOT_FOUND', 'فروشگاه یافت نشد.', [], 404);
+            }
+
+            $backupData = $request->input('backup_data');
+            if (empty($backupData)) {
+                $jsonStr = $request->input('backup_json');
+                if (!empty($jsonStr)) {
+                    $backupData = json_decode($jsonStr, true);
+                }
+            }
+
+            if (empty($backupData) || !is_array($backupData)) {
+                return $this->error('VALIDATION_ERROR', 'محتوای فایل نسخه پشتیبان JSON نامعتبر است.', [], 422);
+            }
+
+            $options = [
+                'batch_size' => (int)($request->input('batch_size', 20)),
+                'strategy' => (string)($request->input('strategy', 'all')),
+            ];
+
+            $priceBackupService = new \App\Services\Bulk\PriceBackupService();
+            $result = $priceBackupService->executeRestore($store, $user->id, $backupData, $options);
+
+            return $this->success($result);
+        } catch (\InvalidArgumentException $e) {
+            return $this->error('VALIDATION_ERROR', $e->getMessage(), [], 422);
+        } catch (\Throwable $e) {
+            $code = $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500;
+            return $this->error('PRICE_RESTORE_EXECUTE_ERROR', $e->getMessage(), [], $code);
+        }
+    }
 }

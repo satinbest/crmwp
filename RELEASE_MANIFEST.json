@@ -38,7 +38,7 @@
     "light_dark_mode": true
   },
   "database": {
-    "total_migrations": 18,
+    "total_migrations": 19,
     "migration_versions": [
       "001_create_users_and_roles_tables",
       "002_create_sessions_and_tokens_tables",
@@ -57,7 +57,8 @@
       "015_create_phase12_notification_tables",
       "016_create_phase13_webhooks_tables",
       "017_create_phase14_multistore_tables",
-      "018_create_phase15_automations_tables"
+      "018_create_phase15_automations_tables",
+      "019_create_local_cache_and_price_safety_tables"
     ],
     "seeder": "App\\Database\\Seeders\\DatabaseSeeder"
   },

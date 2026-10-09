@@ -55,6 +55,22 @@ class CustomerService
      */
     public function listCustomers(int $storeId, array $params = []): array
     {
+        $bypass = !empty($params['bypass_cache']) || !empty($params['fresh']);
+        if (!$bypass) {
+            $localSync = new LocalSyncService();
+            $meta = $localSync->getSyncState($storeId, 'customers');
+            $localCount = $localSync->getLocalTableCount($storeId, 'customers');
+
+            if ($localCount > 0 || ($meta['status'] === 'completed' && $meta['last_successful_sync'] !== null)) {
+                $result = $localSync->getLocalCustomers($storeId, $params);
+                foreach ($result['data'] as &$cust) {
+                    $cust['tags'] = $this->tagRepository->getTagsForCustomer($storeId, (int)($cust['id'] ?? 0));
+                }
+                unset($cust);
+                return $result;
+            }
+        }
+
         $adapter = $this->getCustomerAdapter($storeId);
         $result = $adapter->listCustomers($params);
 

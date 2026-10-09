@@ -41,6 +41,18 @@ class ProductService
      */
     public function listProducts(int $storeId, array $params = []): array
     {
+        $bypass = !empty($params['bypass_cache']) || !empty($params['fresh']);
+        if (!$bypass) {
+            $localSync = new LocalSyncService();
+            $meta = $localSync->getSyncState($storeId, 'products');
+            $localCount = $localSync->getLocalTableCount($storeId, 'products');
+
+            // If local records exist or initial sync was completed, serve from local cache
+            if ($localCount > 0 || ($meta['status'] === 'completed' && $meta['last_successful_sync'] !== null)) {
+                return $localSync->getLocalProducts($storeId, $params);
+            }
+        }
+
         $adapter = $this->getProductAdapter($storeId);
         return $adapter->listProducts($params);
     }

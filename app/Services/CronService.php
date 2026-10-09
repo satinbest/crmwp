@@ -72,7 +72,7 @@ class CronService
                 Logger::error('Cron AutomationEngine error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             }
 
-            // 2. Recover Stale / Interrupted Bulk Operations
+            // 2. Recover Stale / Interrupted Bulk Operations & Sync Locks
             try {
                 $pdo = Connection::get();
                 $staleStmt = $pdo->prepare(
@@ -80,8 +80,15 @@ class CronService
                 );
                 $staleStmt->execute();
                 $result['stale_bulk_recovered'] = $staleStmt->rowCount();
+
+                // Recover expired sync locks in wc_local_sync_meta
+                $staleSyncStmt = $pdo->prepare(
+                    "UPDATE wc_local_sync_meta SET status = 'failed', last_error = 'انقضای خودکار قفل همگام‌سازی پس از ۱۵ دقیقه' WHERE status = 'running' AND last_sync_started_at < DATE_SUB(NOW(), INTERVAL 15 MINUTE)"
+                );
+                $staleSyncStmt->execute();
+                $result['stale_sync_recovered'] = $staleSyncStmt->rowCount();
             } catch (Throwable $e) {
-                $result['errors'][] = 'Bulk recovery: ' . $e->getMessage();
+                $result['errors'][] = 'Recovery: ' . $e->getMessage();
             }
 
             // 3. Batch Cleanup of Old Logs & Notifications (Older than 30 days)
